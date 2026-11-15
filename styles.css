@@ -174,6 +174,19 @@ main {
 .mini .bar { grid-column: 1 / -1; height: 8px; }
 .mini .m { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
 
+/* ---------- timer on a book card ---------- */
+.card-timer { background: var(--brand); color: #111113; border-radius: 12px; padding: 12px; display: grid; gap: 10px; }
+.card-timer .ct-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.card-timer .label { display: inline-flex; align-items: center; gap: 8px; }
+.card-timer.running .label::before { content: ""; width: 9px; height: 9px; border-radius: 99px; background: var(--neon); box-shadow: 0 0 0 1.5px #111113; }
+.card-timer .ct-clock { font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+.card-timer:not(.running) .ct-clock { opacity: .55; }
+.card-timer .ct-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.card-timer .btn { background: #111113; color: #FFFFFF; }
+.card-timer .btn.neon { background: var(--neon); color: #111113; box-shadow: inset 0 0 0 2px #111113; }
+.mini .m.timing { color: var(--brand-ink); font-weight: 700; }
+.mini .m.timing b { font-variant-numeric: tabular-nums; }
+
 /* ---------- books ---------- */
 .cards { display: grid; gap: 12px; }
 .book { background: var(--surface); border-radius: var(--radius-md); padding: 16px; display: grid; gap: 10px; min-width: 0; }

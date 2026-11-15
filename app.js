@@ -212,6 +212,7 @@
     if (state.view === 'books') { renderReading(); renderShelf(); }
     if (state.view === 'stats') { renderMonth(); renderPagesChart(); renderDaily(); renderBooksChart(); }
     if (state.view === 'log') renderLog();
+    tickTimer();
   }
 
   function vs(cur, prev, label) {
@@ -261,7 +262,9 @@
         h('span', { class: 't' }, b.title),
         h('span', { class: 'pct' }, pct + '%'),
         h('span', { class: 'bar' }, h('i', { style: `width:${pct}%` })),
-        h('span', { class: 'm' }, `Page ${nf(cp)} of ${nf(b.totalPages)} · ${line}`)));
+        h('span', { class: 'm' }, `Page ${nf(cp)} of ${nf(b.totalPages)} · ${line}`),
+        activeTimer() && activeTimer().bookId === b.id
+          ? h('span', { class: 'm timing' }, activeTimer().status === 'running' ? 'Timer running · ' : 'Timer paused · ', h('b', { 'data-clock': '' }, fmtClock(timerMs(activeTimer())))) : null));
     }
   }
 
@@ -282,8 +285,8 @@
         h('div', { class: 'actions' },
           h('button', { class: 'btn small', type: 'button', onclick: () => openLog(b.id) }, 'Log pages'),
           h('button', { class: 'btn small neon', type: 'button', onclick: () => markFinished(b) }, 'Finished it'),
-          !t ? h('button', { class: 'btn small ghost wide', type: 'button', onclick: () => { startTimer(b.id); go('today'); } }, 'Start timer')
-            : t.bookId === b.id ? h('button', { class: 'btn small ghost wide', type: 'button', onclick: () => go('today') }, t.status === 'running' ? 'Timer running · open' : 'Timer paused · open') : null),
+          !t ? h('button', { class: 'btn small ghost wide', type: 'button', onclick: () => { startTimer(b.id); go('today'); } }, 'Start timer') : null),
+        t && t.bookId === b.id ? cardTimer(t) : null,
         h('div', { class: 'more' },
           h('button', { class: 'iconbtn', type: 'button', onclick: () => askDnf(b, cp) }, 'Did not finish'),
           h('button', { class: 'iconbtn', type: 'button', onclick: () => askDelete(b) }, 'Delete'))));
@@ -507,7 +510,23 @@
     if (status === 'running') timerTick = setInterval(tickTimer, 1000);
     tickTimer();
   }
-  function tickTimer() { const t = activeTimer(); $('#timerClock').textContent = t ? fmtClock(timerMs(t)) : '0:00'; }
+  function tickTimer() {
+    const t = activeTimer(), txt = t ? fmtClock(timerMs(t)) : '0:00';
+    $('#timerClock').textContent = txt;
+    document.querySelectorAll('[data-clock]').forEach(el => { el.textContent = txt; });
+  }
+  // The timer as it appears on a book's card: live clock, pause/resume, and finish (which opens Today to type the page).
+  function cardTimer(t) {
+    const running = t.status === 'running';
+    return h('div', { class: 'card-timer' + (running ? ' running' : '') },
+      h('div', { class: 'ct-top' },
+        h('span', { class: 'label' }, running ? 'Reading now' : t.status === 'paused' ? 'Paused' : 'Stopped'),
+        h('span', { class: 'ct-clock', 'data-clock': '' }, fmtClock(timerMs(t)))),
+      h('div', { class: 'ct-acts' },
+        running ? h('button', { class: 'btn small', type: 'button', onclick: pauseTimer }, 'Pause')
+                : h('button', { class: 'btn small', type: 'button', onclick: resumeTimer }, 'Resume'),
+        h('button', { class: 'btn small neon', type: 'button', onclick: () => { if (running) finishTimer(); go('today'); setTimeout(() => $('#timerTo').focus(), 80); } }, running ? 'Done' : 'Log it')));
+  }
   // the start page as typed, or where the book was left off
   function timerFrom() {
     const t = activeTimer(), id = t ? t.bookId : $('#timerBook').value, b = state.books[id];
