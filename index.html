@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Reading Tracker</title>
+<meta name="description" content="Track the books you're reading, time your sessions and see your progress.">
+<meta name="theme-color" content="#FF2E93">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Reading">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Outfit:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="stripes" aria-hidden="true"><span></span><span></span><span></span></div>
+  <h1 class="wordmark" id="viewTitle">Reading <mark>Tracker</mark></h1>
+  <p class="today" id="todayLine"></p>
+</header>
+
+<main id="main">
+  <!-- ============ TODAY ============ -->
+  <section class="view" id="view-today" data-view="today" aria-label="Today">
+    <div class="board scores">
+      <div class="score"><span class="label">Today</span><span class="num" id="sToday">0</span><span class="sub">pages</span></div>
+      <div class="score"><span class="label">Streak</span><span class="num" id="sStreak">0</span><span class="sub">days in a row</span></div>
+      <div class="score"><span class="label">This week</span><span class="num" id="sWeek">0</span><span class="sub" id="sWeekSub">pages</span></div>
+      <div class="score"><span class="label">This month</span><span class="num" id="sMonth">0</span><span class="sub" id="sMonthSub">pages</span></div>
+      <div class="score hot wide"><span class="label">Finished this month</span><span class="num" id="sBooks">0</span><span class="sub" id="sBooksSub">books</span></div>
+    </div>
+
+    <div class="timer" id="timer" role="group" aria-labelledby="timerLabel">
+      <div class="timer-top">
+        <span class="label" id="timerLabel">Reading timer</span>
+      </div>
+      <label class="timer-pick" id="timerPickWrap">
+        <span class="sr">Book to time</span>
+        <select id="timerBook"></select>
+      </label>
+      <p class="timer-book" id="timerBookName" hidden></p>
+      <span class="timer-clock" id="timerClock" role="timer">0:00</span>
+      <div class="timer-log" id="timerLog" hidden>
+        <label for="timerTo">Finished on page</label>
+        <input id="timerTo" type="number" inputmode="numeric" min="1" autocomplete="off">
+        <span class="timer-from" id="timerFrom"></span>
+      </div>
+      <p class="timer-err" id="timerErr" role="alert" hidden></p>
+      <div class="timer-acts" id="timerActs"></div>
+      <p class="timer-note" id="timerNote"></p>
+    </div>
+
+    <button class="btn big pinkbtn" type="button" id="openLog">Log pages without the timer</button>
+
+    <div class="sec-head"><h2>On the go</h2><span class="muted" id="todayCount"></span></div>
+    <div class="mini-list" id="todayBooks"></div>
+  </section>
+
+  <!-- ============ BOOKS ============ -->
+  <section class="view" id="view-books" data-view="books" aria-label="Books" hidden>
+    <div class="sec-head">
+      <h2>On the go</h2>
+      <button class="btn small neon" type="button" id="openAdd">+ Add a book</button>
+    </div>
+    <div class="cards" id="readingCards"></div>
+
+    <div class="sec-head">
+      <h2>The shelf</h2>
+      <div class="tabs" role="group" aria-label="Show">
+        <button type="button" data-shelf="finished" aria-pressed="true" id="tabFin">Finished</button>
+        <button type="button" data-shelf="dnf" aria-pressed="false" id="tabDnf">Written off</button>
+      </div>
+    </div>
+    <div id="shelfRows"></div>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <section class="view" id="view-stats" data-view="stats" aria-label="Stats" hidden>
+    <section class="board month-board" aria-labelledby="monthHead">
+      <div class="head">
+        <div class="stack2">
+          <h2 id="monthHead">Finished this month</h2>
+          <span class="sub" id="monthSub"></span>
+        </div>
+        <span class="month-big" id="monthBig">0</span>
+      </div>
+      <div class="spines" id="monthSpines" role="list" aria-label="Books finished this month"></div>
+      <div class="cal" id="monthCal" role="img"></div>
+      <div class="keys"><span><i style="background:var(--neon)"></i>Finished a book</span><span><i style="background:var(--brand)"></i>Read</span></div>
+    </section>
+
+    <section class="board chart-board" aria-labelledby="pagesHead">
+      <div class="head">
+        <div class="stack2"><h2 id="pagesHead">Pages read</h2><span class="sub" id="pagesSub"></span></div>
+      </div>
+      <div class="seg" role="group" aria-label="Group pages by">
+        <button type="button" data-range="day" aria-pressed="true">Day</button>
+        <button type="button" data-range="week" aria-pressed="false">Week</button>
+        <button type="button" data-range="month" aria-pressed="false">Month</button>
+      </div>
+      <div class="chart" id="pagesChart"></div>
+      <div class="keys"><span><i style="background:var(--brand)"></i>Pages read</span><span><i style="background:var(--neon)"></i><span id="curKey">Today</span></span></div>
+    </section>
+
+    <section class="board chart-board" aria-labelledby="dailyHead">
+      <div class="head">
+        <div class="stack2"><h2 id="dailyHead">Your average day</h2><span class="sub" id="dailySub"></span></div>
+      </div>
+      <div class="seg" role="group" aria-label="Average over">
+        <button type="button" data-days="7" aria-pressed="false">7 days</button>
+        <button type="button" data-days="30" aria-pressed="true">30 days</button>
+        <button type="button" data-days="90" aria-pressed="false">90 days</button>
+      </div>
+      <div class="score"><span class="label">Time a day</span><span class="num" id="avgMins">0</span><span class="sub" id="avgMinsSub">minutes</span></div>
+      <div class="chart" id="minsChart"></div>
+      <div class="score"><span class="label">Pages a day</span><span class="num" id="avgPages">0</span><span class="sub" id="avgPagesSub">pages</span></div>
+      <div class="chart" id="dayPagesChart"></div>
+      <div class="keys"><span><i style="background:var(--neon)"></i>Minutes</span><span><i style="background:var(--brand)"></i>Pages</span><span><i class="dash"></i>Average on days you read</span></div>
+    </section>
+
+    <section class="board chart-board" aria-labelledby="booksHead">
+      <div class="head">
+        <div class="stack2"><h2 id="booksHead">Books finished</h2><span class="sub" id="booksSub">Per month, last 12 months</span></div>
+      </div>
+      <div class="chart" id="booksChart"></div>
+      <div class="keys"><span><i style="background:var(--neon)"></i>Finished</span><span><i style="background:var(--gray)"></i>Written off (DNF)</span></div>
+    </section>
+  </section>
+
+  <!-- ============ LOG ============ -->
+  <section class="view" id="view-log" data-view="log" aria-label="Log" hidden>
+    <div class="sec-head"><h2>Reading log</h2><span class="muted" id="histCount"></span></div>
+    <div id="histList"></div>
+
+    <section class="panel quiet" aria-labelledby="backupHead">
+      <h2 id="backupHead">Your data</h2>
+      <p class="muted" id="dataLine">Everything is saved on this phone. Save a backup now and then so you can move it to a new phone.</p>
+      <div class="form-actions">
+        <button class="btn small" type="button" id="exportBtn">Save a backup</button>
+        <button class="btn small ghost" type="button" id="importBtn">Restore a backup</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+      </div>
+    </section>
+  </section>
+</main>
+
+<nav class="tabbar" aria-label="Sections">
+  <button type="button" data-go="today" aria-current="page">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span>Today</span></button>
+  <button type="button" data-go="books">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16.5 5l3.5-1 3 15.5-3.5 1z"/></svg><span>Books</span></button>
+  <button type="button" data-go="stats">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V4M16 20v-6M22 20H2"/></svg><span>Stats</span></button>
+  <button type="button" data-go="log">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"/></svg><span>Log</span></button>
+</nav>
+
+<!-- ============ SHEETS ============ -->
+<dialog class="sheet" id="logSheet" aria-labelledby="logHead">
+  <form id="logForm" novalidate>
+    <div class="sheet-head"><h2 id="logHead">Log a session</h2><button class="iconbtn" type="button" data-close>Close</button></div>
+    <div class="field"><label for="logBook">Book</label><select id="logBook" required></select></div>
+    <div class="field"><label for="logStart">Started reading at</label><input id="logStart" type="datetime-local" required></div>
+    <div class="fields">
+      <div class="field"><label for="logFrom">Started on page</label><input id="logFrom" type="number" min="0" inputmode="numeric" required></div>
+      <div class="field"><label for="logTo">Finished on page</label><input id="logTo" type="number" min="1" inputmode="numeric" required></div>
+    </div>
+    <div class="field"><label for="logMins">Minutes read <span class="opt">(optional)</span></label><input id="logMins" type="number" min="1" inputmode="numeric" placeholder="e.g. 30"></div>
+    <p class="preview-line" id="logPreview" aria-live="polite"></p>
+    <p class="err" id="logErr" role="alert" hidden></p>
+    <button class="btn big" type="submit" id="logSubmit">Log pages</button>
+  </form>
+</dialog>
+
+<dialog class="sheet" id="addSheet" aria-labelledby="addHead">
+  <form id="addForm" novalidate>
+    <div class="sheet-head"><h2 id="addHead">Add a book</h2><button class="iconbtn" type="button" data-close>Close</button></div>
+    <button class="btn big neon" type="button" id="scanBtn">
+      <svg width="22" height="16" viewBox="0 0 22 16" aria-hidden="true" fill="currentColor"><rect x="0" width="2" height="16" rx="1"/><rect x="4" width="1.2" height="16"/><rect x="7" width="2.4" height="16" rx="1"/><rect x="11.4" width="1.2" height="16"/><rect x="14.4" width="2" height="16" rx="1"/><rect x="18" width="1.2" height="16"/><rect x="20.4" width="1.6" height="16" rx=".8"/></svg>
+      Scan the barcode
+    </button>
+    <div class="camera" id="camera" hidden>
+      <video id="camVideo" playsinline muted></video>
+      <div class="cam-frame" aria-hidden="true"></div>
+      <button class="btn small" type="button" id="camStop">Stop camera</button>
+    </div>
+    <input id="scanFile" type="file" accept="image/*" capture="environment" hidden>
+    <div class="field">
+      <label for="addIsbn">ISBN <span class="opt">(filled by the scan, or type it)</span></label>
+      <div class="isbn-row">
+        <input id="addIsbn" type="text" inputmode="numeric" autocomplete="off" placeholder="978…">
+        <button class="btn ghost small" type="button" id="isbnLookup">Look up</button>
+      </div>
+    </div>
+    <p class="scan-status" id="scanStatus" role="status" hidden></p>
+    <div class="field"><label for="addTitle">Book name</label><input id="addTitle" type="text" required autocomplete="off" placeholder="e.g. Piranesi"></div>
+    <div class="field"><label for="addAuthor">Author</label><input id="addAuthor" type="text" autocomplete="off" placeholder="e.g. Susanna Clarke"></div>
+    <div class="fields">
+      <div class="field"><label for="addPages">Number of pages</label><input id="addPages" type="number" min="1" inputmode="numeric" required placeholder="272"></div>
+      <div class="field"><label for="addAt">Already on page</label><input id="addAt" type="number" min="0" inputmode="numeric" placeholder="0"></div>
+    </div>
+    <p class="err" id="addErr" role="alert" hidden></p>
+    <button class="btn big pinkbtn" type="submit">Add to my pile</button>
+  </form>
+</dialog>
+
+<dialog class="sheet" id="confirmSheet" aria-labelledby="confirmHead">
+  <div class="sheet-body">
+    <h2 id="confirmHead"></h2>
+    <p id="confirmText"></p>
+    <div class="field" id="confirmFieldWrap" hidden><label for="confirmField" id="confirmFieldLabel"></label><input id="confirmField" type="text" autocomplete="off"></div>
+    <div class="form-actions stack">
+      <button class="btn big danger" type="button" id="confirmYes"></button>
+      <button class="btn big ghost" type="button" data-close>Cancel</button>
+    </div>
+  </div>
+</dialog>
+
+<div id="tip" hidden></div>
+<div id="toast" role="status" hidden></div>
+
+<script src="seed.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
