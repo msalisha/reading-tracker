@@ -624,7 +624,7 @@
     if (window.ZXing) return Promise.resolve(window.ZXing);
     return zxingLoad || (zxingLoad = new Promise((res, rej) => {
       const sc = document.createElement('script');
-      sc.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+      sc.src = 'vendor/zxing.min.js';
       sc.onload = () => window.ZXing ? res(window.ZXing) : rej(new Error('missing'));
       sc.onerror = () => { zxingLoad = null; rej(new Error('load failed')); };
       document.head.append(sc);
@@ -642,16 +642,40 @@
     } catch (_) {}
     return (detector = false);
   }
-  async function decodeWithZXing(source) {
+  let zxReader = null;
+  async function getReader() {
+    if (zxReader) return zxReader;
     const ZX = await loadZXing();
     const hints = new Map();
     hints.set(ZX.DecodeHintType.POSSIBLE_FORMATS, [ZX.BarcodeFormat.EAN_13, ZX.BarcodeFormat.UPC_A, ZX.BarcodeFormat.EAN_8]);
     hints.set(ZX.DecodeHintType.TRY_HARDER, true);
     const reader = new ZX.MultiFormatReader(); reader.setHints(hints);
-    for (const side of [1200, 800, 1800]) for (const rot of [false, true]) {
-      try { return reader.decode(new ZX.BinaryBitmap(new ZX.HybridBinarizer(new ZX.HTMLCanvasElementLuminanceSource(drawScaled(source, side, rot))))).getText(); } catch (_) {}
-    }
+    return (zxReader = { ZX, reader });
+  }
+  function zxDecode({ ZX, reader }, canvas) {
+    try { return reader.decode(new ZX.BinaryBitmap(new ZX.HybridBinarizer(new ZX.HTMLCanvasElementLuminanceSource(canvas)))).getText(); }
+    catch (_) { return null; } finally { try { reader.reset(); } catch (_) {} }
+  }
+  // A photo: try a few sizes, upright and turned, since the barcode can be anywhere.
+  async function decodeWithZXing(source) {
+    const r = await getReader();
+    for (const side of [1200, 800, 1800]) for (const rot of [false, true]) { const c = zxDecode(r, drawScaled(source, side, rot)); if (c) return c; }
     return null;
+  }
+  // A live camera frame: only the band inside the green box, which is quicker and sharper.
+  const band = document.createElement('canvas');
+  async function decodeVideoFrame(v) {
+    const r = await getReader();
+    const vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return null;
+    // the green box covers the middle 80% across and 40% down of what the viewer sees (object-fit: cover, 4:3)
+    const viewRatio = 4 / 3, srcRatio = vw / vh;
+    let sw = vw, sh = vh, sx = 0, sy = 0;
+    if (srcRatio > viewRatio) { sw = vh * viewRatio; sx = (vw - sw) / 2; } else { sh = vw / viewRatio; sy = (vh - sh) / 2; }
+    const cx = sx + sw * 0.05, cy = sy + sh * 0.25, cw = sw * 0.9, ch = sh * 0.5;
+    const k = Math.min(1, 1000 / cw);
+    band.width = Math.round(cw * k); band.height = Math.round(ch * k);
+    band.getContext('2d', { willReadFrequently: true }).drawImage(v, cx, cy, cw, ch, 0, 0, band.width, band.height);
+    return zxDecode(r, band);
   }
   function drawScaled(src, maxSide, rot) {
     const w = src.videoWidth || src.width, hh = src.videoHeight || src.height, k = Math.min(1, maxSide / Math.max(w, hh));
@@ -676,6 +700,7 @@
     await v.play().catch(() => {});
     setScanStatus('Hold the barcode inside the green box.', 'busy');
     const det = await getDetector();
+    if (!det) getReader().catch(() => {});
     let busy = false, tries = 0;
     camLoop = setInterval(async () => {
       if (busy || !camStream || v.readyState < 2) return;
@@ -683,11 +708,11 @@
       try {
         let code = null;
         if (det) { const f = await det.detect(v); const hit = f.find(x => normIsbn(x.rawValue)) || f[0]; code = hit && hit.rawValue; }
-        else if (tries % 2 === 0) code = await decodeWithZXing(v);
+        else code = await decodeVideoFrame(v);
         if (code) { const isbn = normIsbn(code); if (isbn) { stopCamera(); buzz(40); $('#addIsbn').value = isbn; await lookupIsbn(isbn); } }
       } catch (_) {}
       busy = false;
-    }, det ? 250 : 500);
+    }, det ? 250 : 200);
   }
   function stopCamera() {
     clearInterval(camLoop); camLoop = null;

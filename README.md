@@ -16,6 +16,9 @@ Your books and sessions from the web tracker (4 books, 40 sessions, as of 15 Nov
    - **iPhone (Safari):** Share → **Add to Home Screen**.
    - **Android (Chrome):** menu ⋮ → **Install app**.
 
+## Barcode scanning
+Scanning never worked in the Claude app version: Claude app pages aren't allowed to use the camera. This app runs in your phone's own browser, which can. Tap **Scan the barcode**, allow the camera once, and hold the barcode inside the green box; it reads by itself. If you say no to the camera, it offers to take a photo instead. The barcode reader is bundled with the app (`vendor/zxing.min.js`), so scanning works offline. The book details come from Open Library (then Google Books), which needs a connection.
+
 ## Your data
 Data is stored on the phone (localStorage), not in the cloud, so it doesn't sync between devices. Use **Log → Save a backup** now and then; **Restore a backup** loads it on another phone.
 

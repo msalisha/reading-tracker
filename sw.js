@@ -1,7 +1,7 @@
 // Offline support: the app shell is cached on install, fonts and the barcode library are cached the first time they load.
 // Bump VERSION whenever app files change so phones pick up the new version.
-const VERSION = 'rt-v1';
-const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'seed.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/apple-touch-icon.png'];
+const VERSION = 'rt-v2';
+const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'seed.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/apple-touch-icon.png', 'vendor/zxing.min.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
