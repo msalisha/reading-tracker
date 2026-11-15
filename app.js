@@ -471,16 +471,27 @@
     $('#timerPickWrap').hidden = !!t || !list.length;
     const b = t ? state.books[t.bookId] : null;
     $('#timerBookName').hidden = !t; $('#timerBookName').textContent = b ? b.title : 'Deleted book';
-    $('#timerLog').hidden = !t || !b || status === 'running';
     if (!t) showErr($('#timerErr'), '');
+    // "Starting on page": filled with where you got to last time, and yours to change before you start or when you log
+    const fromIn = $('#timerFromIn'), forBook = t ? t.bookId : pick.value, fb = state.books[forBook];
+    const key = (t ? 'timer:' : 'pick:') + forBook;
+    if (fromIn.dataset.key !== key || !fromIn.dataset.touched) {
+      fromIn.dataset.key = key; fromIn.dataset.touched = '';
+      fromIn.value = fb ? (t && Number.isFinite(t.startPage) ? t.startPage : currentPage({ id: forBook, ...fb })) : '';
+    }
+    if (fb) { fromIn.min = 0; fromIn.max = fb.totalPages - 1; }
+    const editing = !t || (b && status !== 'running');
+    $('#timerFromRow').hidden = !fb || !editing;
+    $('#timerToRow').hidden = !t || !b || status === 'running';
+    $('#timerFrom').hidden = !(t && b && status === 'running');
     if (t && b) {
-      const from = currentPage({ id: t.bookId, ...b }), inp = $('#timerTo');
-      inp.min = from + 1; inp.max = b.totalPages; inp.placeholder = `${from + 1}–${b.totalPages}`;
-      $('#timerFrom').textContent = `You started on page ${from}.`;
+      const from = timerFrom(), inp = $('#timerTo');
+      inp.min = from + 1; inp.max = b.totalPages; inp.placeholder = `${Math.min(from + 1, b.totalPages)}–${b.totalPages}`;
+      $('#timerFrom').textContent = `From page ${from}`;
     }
     if (!t) {
       acts.append(h('button', { class: 'btn neon', type: 'button', disabled: !list.length, onclick: () => startTimer(pick.value) }, 'Start reading'));
-      $('#timerNote').textContent = list.length ? 'Tap start when you open the book. It keeps counting even if you close the app.' : 'Add a book first, then time your reading.';
+      $('#timerNote').textContent = list.length ? 'Change the starting page if you\'re not picking up where you left off. The timer keeps counting even if you close the app.' : 'Add a book first, then time your reading.';
     } else if (!b) {
       acts.append(h('button', { class: 'btn ghost', type: 'button', onclick: discardTimer }, 'Discard'));
       $('#timerNote').textContent = 'The book for this timer was deleted.';
@@ -489,7 +500,7 @@
       $('#timerNote').textContent = `Started ${fmtWhen(t.startedAt)}.`;
     } else {
       acts.append(h('button', { class: 'btn neon', type: 'button', onclick: stopTimer }, 'Log it'), h('button', { class: 'btn', type: 'button', onclick: resumeTimer }, 'Resume'));
-      $('#timerNote').textContent = 'Type the page you got to and tap Log it. ';
+      $('#timerNote').textContent = 'Check the starting page, type the page you got to, and tap Log it. ';
       $('#timerNote').append(h('button', { class: 'iconbtn', type: 'button', style: 'color:#111113;padding:0 4px;min-height:0;text-decoration:underline', onclick: discardTimer }, 'Discard this timer'));
     }
     clearInterval(timerTick); timerTick = null;
@@ -497,10 +508,30 @@
     tickTimer();
   }
   function tickTimer() { const t = activeTimer(); $('#timerClock').textContent = t ? fmtClock(timerMs(t)) : '0:00'; }
+  // the start page as typed, or where the book was left off
+  function timerFrom() {
+    const t = activeTimer(), id = t ? t.bookId : $('#timerBook').value, b = state.books[id];
+    const v = parseInt($('#timerFromIn').value, 10);
+    if (Number.isFinite(v)) return v;
+    if (t && Number.isFinite(t.startPage)) return t.startPage;
+    return b ? currentPage({ id, ...b }) : 0;
+  }
+  function checkFrom(b, from) {
+    if (!Number.isFinite(from) || from < 0) return 'Type the page you are starting on.';
+    if (from >= b.totalPages) return `This book has ${b.totalPages} pages, so you need to start before page ${b.totalPages}.`;
+    return '';
+  }
   function startTimer(bookId) {
-    if (activeTimer() || !state.books[bookId]) return;
+    const b = state.books[bookId];
+    if (activeTimer() || !b) return;
+    // started from a book card rather than the picker: use where that book was left off
+    const typed = $('#timerFromIn').dataset.key === 'pick:' + bookId;
+    const from = typed ? parseInt($('#timerFromIn').value, 10) : currentPage({ id: bookId, ...b });
+    const bad = checkFrom(b, from);
+    if (bad) { showErr($('#timerErr'), bad); $('#timerFromIn').focus(); return; }
+    showErr($('#timerErr'), '');
     $('#timerTo').value = '';
-    store.put('timer', 'active', { bookId, startedAt: nowInput(), accumMs: 0, runningSince: Date.now(), status: 'running' });
+    store.put('timer', 'active', { bookId, startPage: from, startedAt: nowInput(), accumMs: 0, runningSince: Date.now(), status: 'running' });
     buzz(20); commit();
   }
   function pauseTimer() { const t = activeTimer(); if (!t || t.status !== 'running') return; store.patch('timer', 'active', { accumMs: timerMs(t), runningSince: null, status: 'paused' }); commit(); }
@@ -513,8 +544,10 @@
   function stopTimer() {
     const t = activeTimer(); if (!t) return;
     const b = state.books[t.bookId], err = $('#timerErr'), inp = $('#timerTo'); if (!b) return;
-    const from = currentPage({ id: t.bookId, ...b }), to = parseInt(inp.value, 10);
+    const from = timerFrom(), to = parseInt(inp.value, 10);
     const fail = msg => { showErr(err, msg); inp.focus(); };
+    const bad = checkFrom(b, from);
+    if (bad) { showErr(err, bad); $('#timerFromIn').focus(); return; }
     if (!Number.isFinite(to)) return fail('Type the page you finished on first.');
     if (to <= from) return fail(`You started on page ${from}, so the finishing page needs to be higher.`);
     if (to > b.totalPages) return fail(`This book has ${b.totalPages} pages, so the finishing page can't be higher.`);
@@ -599,6 +632,12 @@
     showErr(err, '');
     if (saveSession(bookId, startedAt, from, to, mins, false)) closeSheet($('#logSheet'));
   });
+  $('#timerFromIn').addEventListener('input', () => {
+    const fi = $('#timerFromIn'); fi.dataset.touched = '1'; showErr($('#timerErr'), '');
+    const t = activeTimer(), v = parseInt(fi.value, 10);
+    if (t && Number.isFinite(v)) { store.patch('timer', 'active', { startPage: v }); persist(); }
+  });
+  $('#timerBook').addEventListener('change', () => { $('#timerFromIn').dataset.touched = ''; renderTimer(); });
   $('#timerTo').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); stopTimer(); } });
 
   // ================= add book + barcode =================

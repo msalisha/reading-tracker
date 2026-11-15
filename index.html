@@ -47,10 +47,16 @@
       </label>
       <p class="timer-book" id="timerBookName" hidden></p>
       <span class="timer-clock" id="timerClock" role="timer">0:00</span>
-      <div class="timer-log" id="timerLog" hidden>
-        <label for="timerTo">Finished on page</label>
-        <input id="timerTo" type="number" inputmode="numeric" min="1" autocomplete="off">
-        <span class="timer-from" id="timerFrom"></span>
+      <div class="timer-log">
+        <div class="tf" id="timerFromRow">
+          <label for="timerFromIn">Starting on page</label>
+          <input id="timerFromIn" type="number" inputmode="numeric" min="0" autocomplete="off">
+        </div>
+        <div class="tf" id="timerToRow" hidden>
+          <label for="timerTo">Finished on page</label>
+          <input id="timerTo" type="number" inputmode="numeric" min="1" autocomplete="off">
+        </div>
+        <p class="timer-from" id="timerFrom" hidden></p>
       </div>
       <p class="timer-err" id="timerErr" role="alert" hidden></p>
       <div class="timer-acts" id="timerActs"></div>
