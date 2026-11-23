@@ -6,7 +6,7 @@
 
 | Tab | What you can do |
 |---|---|
-| **Today** | Scores (today, streak, week, month, books finished), the reading timer (choose a book, set the starting page, start, pause, Done, log the page you got to), log a session by hand, books on the go |
+| **Today** | Scores (today, streak, week, month, books finished), the reading timer (choose a book, set the starting page, start, pause, Done, log the page you got to) with optional **Focus sounds** (rain, café or fireplace, keeps playing with the screen locked), log a session by hand, books on the go |
 | **Books** | On the go (progress, pace, reading line, timer with pause/resume), **Want to read**, the shelf (finished and written off). **Add a book** by scanning its barcode (finds the title, author, pages and **cover**) or typing it |
 | **Book page** | Cover, progress, **star rating** (optional, half stars), **notes**: quotes and thoughts with an optional page number, **scan a quote from the page** with the camera, **share any quote as a picture** (square or story size, in any colour scheme), copy, edit details |
 | **Stats** | **Monthly recap** and **Year in review** (story-style pages you can swipe and share as pictures), finished this month (spines and calendar), pages by day, week or month, your average day, books per month and average rating |
@@ -54,7 +54,7 @@ Re-run `xcodegen` whenever files are added or `project.yml` changes.
    | Product ID | Reference name | Price | Display name | Description |
    |---|---|---|---|---|
    | `trial.3day` | 3-Day Free Trial | **Free** | 3-Day Free Trial | Use every feature free for 3 days. |
-   | `unlock.lifetime` | Unlock forever | e.g. £4.99 | Unlock forever | Unlock everything, forever. One payment, no subscription. |
+   | `unlock.lifetime` | Unlock forever | **9.99** (choose the matching price point in your currency, e.g. £9.99 / $9.99 / €9.99) | Unlock forever | Unlock everything, forever. One payment, no subscription. |
 
    Apple requires the free item's name to say how long the trial is ("3-Day Free Trial"). Add a review screenshot to each item; the paywall screenshot works.
 4. **App Privacy:** choose **Data Not Collected**.

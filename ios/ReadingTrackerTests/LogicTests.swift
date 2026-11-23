@@ -184,6 +184,33 @@ final class RecapTests: XCTestCase {
     }
 }
 
+final class SoundTests: XCTestCase {
+    private func stats(_ sound: FocusSound, seconds: Double = 2) -> (rms: Float, peak: Float, finite: Bool) {
+        let synth = SoundSynth(sampleRate: 44_100)
+        synth.sound = sound
+        var sum: Float = 0, peak: Float = 0, finite = true
+        let n = Int(44_100 * seconds)
+        for _ in 0..<n {
+            let x = synth.next()
+            if !x.isFinite { finite = false }
+            sum += x * x
+            peak = max(peak, abs(x))
+        }
+        return ((sum / Float(n)).squareRoot(), peak, finite)
+    }
+
+    func testEachSoundIsAudibleAndSafe() {
+        for sound in [FocusSound.rain, .cafe, .fireplace] {
+            let s = stats(sound)
+            XCTAssertTrue(s.finite, "\(sound) produced an invalid sample")
+            XCTAssertLessThanOrEqual(s.peak, 1, "\(sound) clips")
+            XCTAssertGreaterThan(s.rms, 0.01, "\(sound) is too quiet")
+            XCTAssertLessThan(s.rms, 0.5, "\(sound) is too loud")
+        }
+        XCTAssertEqual(stats(.off, seconds: 0.2).rms, 0)
+    }
+}
+
 final class TimerTests: XCTestCase {
     func testPauseResumeKeepsTime() {
         let t0 = Date(timeIntervalSince1970: 1_000_000)

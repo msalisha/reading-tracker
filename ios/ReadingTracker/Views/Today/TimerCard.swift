@@ -66,6 +66,8 @@ struct TimerCard: View {
                     .accessibilityIdentifier("timerClock")
             }
 
+            FocusSoundBar()
+
             if showFromField {
                 PageField(label: timer == nil ? "Starting on page" : "Started on page", text: $fromText,
                           placeholder: "0", identifier: "timerFrom", focused: $fromFocused)
@@ -223,5 +225,45 @@ struct TimerCard: View {
         toText = ""
         error = nil
         timerModel.clear()
+    }
+}
+
+/// Off / Rain / Café / Fire, plus a volume slider. Sounds play while the timer runs;
+/// choosing one before you start plays a short preview.
+struct FocusSoundBar: View {
+    @State private var player = FocusSoundPlayer.shared
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                ForEach(FocusSound.allCases) { s in
+                    let on = player.sound == s
+                    Button { player.setSound(s) } label: {
+                        VStack(spacing: 2) {
+                            Image(systemName: s.icon).font(.subheadline.weight(.semibold))
+                            Text(s.title).font(.caption2.weight(.bold))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 7)
+                        .foregroundStyle(on ? Color.white : Color(hex: 0x111113))
+                        .background(on ? Color(hex: 0x111113) : Color.white.opacity(0.55), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(s.title) sound")
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                    .accessibilityIdentifier("sound-\(s.rawValue)")
+                }
+            }
+            if player.sound != .off {
+                HStack(spacing: 8) {
+                    Image(systemName: "speaker.fill").font(.caption)
+                    Slider(value: Binding(get: { player.volume }, set: { player.setVolume($0) }), in: 0.05...1)
+                        .tint(Color(hex: 0x111113))
+                        .accessibilityLabel("Sound volume")
+                    Image(systemName: "speaker.wave.3.fill").font(.caption)
+                }
+            }
+        }
     }
 }

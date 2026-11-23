@@ -52,6 +52,7 @@ targets:
         NSCameraUsageDescription: Scan book barcodes and capture quotes from pages.
         NSPhotoLibraryAddUsageDescription: Save quote cards and reading recaps to your photos.
         NSSupportsLiveActivities: true
+        UIBackgroundModes: [audio]
         ITSAppUsesNonExemptEncryption: false
         CFBundleURLTypes:
           - CFBundleURLName: pageturner

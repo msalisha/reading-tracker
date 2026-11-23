@@ -55,12 +55,16 @@ final class FlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["timerStart"].waitForExistence(timeout: 5))
         type(app, "timerFrom", "20")
         if app.buttons["keyboardDone"].exists { app.buttons["keyboardDone"].tap() }
+        // pick a focus sound (it previews, then plays while the timer runs)
+        XCTAssertTrue(app.buttons["sound-rain"].waitForExistence(timeout: 5))
+        app.buttons["sound-rain"].tap()
         app.buttons["timerStart"].tap()
         XCTAssertTrue(app.buttons["timerPause"].waitForExistence(timeout: 5))
         sleep(2)
         app.buttons["timerPause"].tap()
         XCTAssertTrue(app.buttons["timerResume"].waitForExistence(timeout: 5))
         app.buttons["timerResume"].tap()
+        shot(app, "14-timer-with-rain")
         app.buttons["timerDone"].tap()
         type(app, "timerTo", "45")
         // The keyboard covers the card's Log it button, so use the one above the keyboard.
@@ -77,6 +81,7 @@ final class FlowUITests: XCTestCase {
         }
         XCTAssertTrue(app.staticTexts["25"].exists || app.staticTexts.containing(NSPredicate(format: "label CONTAINS '25'")).count > 0)
 
+        app.buttons["sound-off"].tap()
         app.tabBars.buttons["Log"].tap()
         XCTAssertTrue(app.staticTexts["+25"].waitForExistence(timeout: 5))
     }

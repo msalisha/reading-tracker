@@ -11,12 +11,16 @@ final class TimerModel {
 
     init() {
         timer = TimerStorage.load()
+        FocusSoundPlayer.shared.timerChanged(running: timer?.status == .running)
         observer = NotificationCenter.default.addObserver(forName: .readingTimerChanged, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.reload() }
         }
     }
 
-    func reload() { timer = TimerStorage.load() }
+    func reload() {
+        timer = TimerStorage.load()
+        FocusSoundPlayer.shared.timerChanged(running: timer?.status == .running)
+    }
 
     func start(book: Book, startPage: Int) {
         guard timer == nil else { return }
@@ -53,6 +57,7 @@ final class TimerModel {
     private func write(_ t: ActiveTimer?) {
         timer = t
         TimerStorage.save(t)
+        FocusSoundPlayer.shared.timerChanged(running: t?.status == .running)
         WidgetCenter.shared.reloadAllTimelines()
     }
 }
