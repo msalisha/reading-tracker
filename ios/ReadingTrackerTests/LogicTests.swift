@@ -200,7 +200,7 @@ final class SoundTests: XCTestCase {
     }
 
     func testEachSoundIsAudibleAndSafe() {
-        for sound in [FocusSound.rain, .cafe, .fireplace] {
+        for sound in [FocusSound.rain, .cafe, .fireplace, .beach] {
             let s = stats(sound)
             XCTAssertTrue(s.finite, "\(sound) produced an invalid sample")
             XCTAssertLessThanOrEqual(s.peak, 1, "\(sound) clips")
@@ -208,6 +208,25 @@ final class SoundTests: XCTestCase {
             XCTAssertLessThan(s.rms, 0.5, "\(sound) is too loud")
         }
         XCTAssertEqual(stats(.off, seconds: 0.2).rms, 0)
+    }
+
+    func testSoundsAreStereo() {
+        for sound in [FocusSound.rain, .cafe, .fireplace, .beach] {
+            let synth = SoundSynth(sampleRate: 44_100)
+            synth.sound = sound
+            var diff: Float = 0
+            for _ in 0..<44_100 { let (l, r) = synth.nextStereo(); diff += abs(l - r) }
+            XCTAssertGreaterThan(diff / 44_100, 0.001, "\(sound) should differ between left and right")
+        }
+    }
+
+    func testSoundsAreFastEnoughForRealTime() {
+        // one second of the busiest sound must take well under a second to make
+        let synth = SoundSynth(sampleRate: 48_000)
+        synth.sound = .cafe
+        let start = Date()
+        for _ in 0..<48_000 { _ = synth.nextStereo() }
+        XCTAssertLessThan(Date().timeIntervalSince(start), 0.5)
     }
 }
 

@@ -31,6 +31,7 @@ targets:
       - path: ReadingTracker
         excludes:
           - "**/*.storekit"
+          - "**/*.md"
       - path: Shared
     settings:
       base:
@@ -39,6 +40,9 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
     info:
       path: ReadingTracker/Info.plist
       properties:
