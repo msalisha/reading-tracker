@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import SwiftData
 
 /// The big reading timer: pick a book, check the starting page, start, pause, then log the page you got to.
@@ -16,9 +17,8 @@ struct TimerCard: View {
     @State private var fromText = ""
     @State private var toText = ""
     @State private var error: String?
-    @FocusState private var focus: Field?
-
-    private enum Field { case from, to }
+    @FocusState private var fromFocused: Bool
+    @FocusState private var toFocused: Bool
 
     private var timer: ActiveTimer? { timerModel.timer }
     private var timedBook: Book? { timer.flatMap { t in readingBooks.first { $0.uid == t.bookID } ?? Library.book(ctx, uid: t.bookID) } }
@@ -68,13 +68,11 @@ struct TimerCard: View {
 
             if showFromField {
                 PageField(label: timer == nil ? "Starting on page" : "Started on page", text: $fromText,
-                          placeholder: "0", identifier: "timerFrom")
-                    .focused($focus, equals: .from)
+                          placeholder: "0", identifier: "timerFrom", focused: $fromFocused)
             }
             if let t = timer, t.status != .running, timedBook != nil {
                 PageField(label: "Finished on page", text: $toText,
-                          placeholder: placeholderTo, identifier: "timerTo")
-                    .focused($focus, equals: .to)
+                          placeholder: placeholderTo, identifier: "timerTo", focused: $toFocused)
             }
             if let t = timer, t.status == .running {
                 Text("From page \(t.startPage)").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
@@ -112,11 +110,11 @@ struct TimerCard: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
-                if let t = timer, t.status != .running, focus == .to {
+                if let t = timer, t.status != .running, toFocused {
                     Button("Log it", action: logIt).fontWeight(.bold).accessibilityIdentifier("keyboardLogIt")
                 }
                 Spacer()
-                Button("Done") { focus = nil }.accessibilityIdentifier("keyboardDone")
+                Button("Done") { hideKeyboard() }.accessibilityIdentifier("keyboardDone")
             }
         }
     }
@@ -152,7 +150,7 @@ struct TimerCard: View {
                 HStack(spacing: 8) {
                     Button("Pause") { timerModel.pause() }
                         .buttonStyle(PillButton(kind: .solid, big: true)).accessibilityIdentifier("timerPause")
-                    Button("Done") { timerModel.stop(); focus = .to }
+                    Button("Done") { timerModel.stop(); toFocused = true }
                         .buttonStyle(PillButton(kind: .highlight, big: true)).accessibilityIdentifier("timerDone")
                 }
             } else {
@@ -189,12 +187,12 @@ struct TimerCard: View {
         let from = Int(trimming: fromText)
         guard let from, from >= 0, from < b.totalPages else {
             error = from == nil ? "Type the page you are starting on." : "This book has \(b.totalPages) pages, so you need to start before page \(b.totalPages)."
-            focus = .from
+            fromFocused = true
             return
         }
         error = nil
         toText = ""
-        focus = nil
+        hideKeyboard()
         timerModel.start(book: b, startPage: from)
     }
 
@@ -204,15 +202,21 @@ struct TimerCard: View {
         let from = Int(trimming: fromText), to = Int(trimming: toText)
         if let problem = Library.problem(from: from, to: to, totalPages: b.totalPages) {
             error = problem
-            focus = from == nil || (from ?? 0) >= b.totalPages ? .from : .to
+            if from == nil || (from ?? 0) >= b.totalPages { fromFocused = true } else { toFocused = true }
             return
         }
         error = nil
-        focus = nil
+        hideKeyboard()
         let finished = Library.logSession(ctx, book: b, startedAt: t.startedAt, from: from!, to: to!, minutes: t.minutes())
         toText = ""
         timerModel.clear()
         if finished { router.rateBookID = b.uid }
+    }
+
+    private func hideKeyboard() {
+        fromFocused = false
+        toFocused = false
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     private func discard() {

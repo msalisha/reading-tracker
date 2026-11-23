@@ -238,12 +238,14 @@ struct PageField: View {
     @Binding var text: String
     var placeholder = ""
     var identifier: String
+    var focused: FocusState<Bool>.Binding
 
     var body: some View {
         HStack {
             Text(label).font(.subheadline.weight(.bold))
             Spacer()
             TextField(placeholder, text: $text)
+                .focused(focused)
                 .numericField()
                 .foregroundStyle(Color(hex: 0x111113))
                 .padding(.vertical, 10)

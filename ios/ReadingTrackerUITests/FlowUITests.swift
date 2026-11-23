@@ -66,8 +66,11 @@ final class FlowUITests: XCTestCase {
             app.buttons["keyboardDone"].tap()
             app.buttons["timerLog"].tap()
         }
-        if !app.buttons["timerStart"].waitForExistence(timeout: 5) { shot(app, "fail-after-log") }
-        XCTAssertTrue(app.buttons["timerStart"].exists, "timer should reset after logging")
+        if !app.buttons["timerStart"].waitForExistence(timeout: 5) {
+            shot(app, "fail-after-log")
+            let err = app.staticTexts["timerError"]
+            XCTFail("timer should reset after logging. Error shown: \(err.exists ? err.label : "none"). Screen:\n\(app.debugDescription)")
+        }
         XCTAssertTrue(app.staticTexts["25"].exists || app.staticTexts.containing(NSPredicate(format: "label CONTAINS '25'")).count > 0)
 
         app.tabBars.buttons["Log"].tap()
