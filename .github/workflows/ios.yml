@@ -63,6 +63,20 @@ jobs:
             2>&1 | tee build.log | grep -iE "error:|warning: .*\.swift|Test case .*(passed|failed)|recorded an issue|Executed|\*\* (BUILD|TEST)" || true
           grep -q "\*\* TEST SUCCEEDED \*\*" build.log || { echo "---- last 120 lines ----"; tail -120 build.log; exit 1; }
 
+      - name: Test summary (includes Swift Testing)
+        if: always()
+        run: |
+          xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact > summary.json || exit 0
+          python3 - <<'PY'
+          import json
+          s = json.load(open("summary.json"))
+          print(f"Passed: {s.get('passedTests')}  Failed: {s.get('failedTests')}  Skipped: {s.get('skippedTests')}  Total: {s.get('totalTestCount')}")
+          for f in s.get("testFailures", []):
+              print("FAILED:", f.get("testName"), "-", f.get("failureText"))
+          if (s.get("totalTestCount") or 0) < 30:
+              raise SystemExit("Expected at least 30 tests (unit + UI); some didn't run.")
+          PY
+
       - name: Upload screenshots and log
         if: always()
         uses: actions/upload-artifact@v4
