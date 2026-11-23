@@ -13,8 +13,8 @@ struct BookDetailView: View {
     @State private var editing = false
     @State private var askDelete = false
 
-    private var notes: [BookNote] { book.notes.sorted { $0.createdAt > $1.createdAt } }
-    private var sessions: [ReadingSession] { book.sessions.sorted { $0.startedAt > $1.startedAt } }
+    private var notes: [BookNote] { book.notes.sorted { $0.createdAt.seconds > $1.createdAt.seconds } }
+    private var sessions: [ReadingSession] { book.sessions.sorted { $0.startedAt.seconds > $1.startedAt.seconds } }
 
     var body: some View {
         let pace = Stats.pace(book.snap, sessions: book.sessions.map(\.snap), now: .now)

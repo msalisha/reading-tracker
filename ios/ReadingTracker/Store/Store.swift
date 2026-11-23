@@ -28,7 +28,7 @@ enum AccessRules {
         if unlocked { return .unlocked }
         guard let start = trialStart else { return .noTrial }
         let end = start.addingTimeInterval(trialLength)
-        return now < end ? .trial(endsAt: end) : .expired
+        return now.seconds < end.seconds ? .trial(endsAt: end) : .expired
     }
 
     /// "3 days left", "1 day left", "5 hours left".
@@ -88,7 +88,10 @@ final class Store {
         for await result in Transaction.currentEntitlements {
             guard case .verified(let t) = result, t.revocationDate == nil else { continue }
             if t.productID == Self.unlockID { owned = true }
-            if t.productID == Self.trialID { start = min(start ?? t.purchaseDate, t.originalPurchaseDate) }
+            if t.productID == Self.trialID {
+                let first = t.originalPurchaseDate.seconds < t.purchaseDate.seconds ? t.originalPurchaseDate : t.purchaseDate
+                if start == nil || first.seconds < start!.seconds { start = first }
+            }
         }
         trialStart = start
         unlocked = owned

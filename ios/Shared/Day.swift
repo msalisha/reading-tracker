@@ -1,5 +1,12 @@
 import Foundation
 
+extension Date {
+    /// Seconds since 2001, as a plain number. Compare these instead of comparing dates with < or >=:
+    /// apps built with a newer Xcode can call date operators that older iOS versions don't have,
+    /// which crashes on those phones.
+    var seconds: TimeInterval { timeIntervalSinceReferenceDate }
+}
+
 /// Calendar helpers. Days are kept as "yyyy-MM-dd" keys in the reader's own time zone, the same as the web app.
 enum Day {
     /// A plain value (no shared formatter objects), so it's safe to use from anywhere.

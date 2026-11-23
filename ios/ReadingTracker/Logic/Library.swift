@@ -102,7 +102,7 @@ enum Library {
         let mk = Day.monthKey(.now)
         snapshot.booksThisMonth = books.filter { $0.status == .finished && ($0.finishedDay ?? "").hasPrefix(mk) }.count
         let timerBook = TimerStorage.load()?.bookID
-        let reading = books.filter { $0.status == .reading }.sorted { $0.lastAt > $1.lastAt }
+        let reading = books.filter { $0.status == .reading }.sorted { $0.lastAt.seconds > $1.lastAt.seconds }
         if let b = reading.first(where: { $0.uid == timerBook }) ?? reading.first {
             snapshot.currentBook = .init(id: b.uid, title: b.title, author: b.author,
                                          page: Stats.currentPage(b.snap, sessions: snaps), totalPages: b.totalPages,

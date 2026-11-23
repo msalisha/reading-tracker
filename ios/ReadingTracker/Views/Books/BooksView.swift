@@ -64,7 +64,7 @@ struct BooksView: View {
     }
 
     @ViewBuilder private var wantList: some View {
-        let list = books.filter { $0.status == .wantToRead }.sorted { $0.addedAt > $1.addedAt }
+        let list = books.filter { $0.status == .wantToRead }.sorted { $0.addedAt.seconds > $1.addedAt.seconds }
         if list.isEmpty {
             EmptyCard(text: "Books you'd like to read go here. Tap + and choose Want to read.")
         }

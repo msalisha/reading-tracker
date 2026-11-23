@@ -62,8 +62,8 @@ enum Backup {
             out.notes.append(NoteRecord(id: id, bookID: bookID, kind: BookNote.Kind(rawValue: n["kind"] as? String ?? "") ?? .thought,
                                         text: text, page: int(n["page"]), createdAt: date(n["createdAt"]) ?? .now))
         }
-        out.books.sort { $0.addedAt < $1.addedAt }
-        out.sessions.sort { $0.startedAt < $1.startedAt }
+        out.books.sort { $0.addedAt.seconds < $1.addedAt.seconds }
+        out.sessions.sort { $0.startedAt.seconds < $1.startedAt.seconds }
         return out
     }
 
@@ -161,11 +161,11 @@ enum Backup {
 
     @MainActor
     static func csv(_ ctx: ModelContext) -> String {
-        let books = ((try? ctx.fetch(FetchDescriptor<Book>())) ?? []).sorted { $0.addedAt < $1.addedAt }
+        let books = ((try? ctx.fetch(FetchDescriptor<Book>())) ?? []).sorted { $0.addedAt.seconds < $1.addedAt.seconds }
         var rows = ["Book,Author,Status,Pages,Rating,Finished,Session started,From page,To page,Pages read,Minutes"]
         for b in books {
             let head = [b.title, b.author, b.statusRaw, String(b.totalPages), b.rating.map { String($0) } ?? "", b.finishedDay ?? ""]
-            let ss = b.sessions.sorted { $0.startedAt < $1.startedAt }
+            let ss = b.sessions.sorted { $0.startedAt.seconds < $1.startedAt.seconds }
             if ss.isEmpty { rows.append((head + ["", "", "", "", ""]).map(field).joined(separator: ",")) }
             for s in ss {
                 rows.append((head + [local(s.startedAt), String(s.startPage), String(s.endPage), String(s.pages),

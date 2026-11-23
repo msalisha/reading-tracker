@@ -137,9 +137,9 @@ enum Stats {
         s.today = pbd[today] ?? 0
         for (k, v) in pbd {
             let d = Day.date(k)
-            if d >= weekStart && k <= today {
+            if d.seconds >= weekStart.seconds && k <= today {
                 s.week += v
-            } else if d >= lastWeekStart && d < weekStart && Day.daysBetween(lastWeekStart, d) <= daysIntoWeek {
+            } else if d.seconds >= lastWeekStart.seconds && d.seconds < weekStart.seconds && Day.daysBetween(lastWeekStart, d) <= daysIntoWeek {
                 s.lastWeekSoFar += v
             }
             if k.hasPrefix(mk) {
@@ -176,7 +176,7 @@ enum Stats {
 
     /// Page reached over time for a book, for its little progress line.
     static func progressLine(_ book: BookSnap, sessions: [SessionSnap]) -> [(Date, Int)] {
-        let mine = sessions.filter { $0.bookID == book.id }.sorted { $0.startedAt < $1.startedAt }
+        let mine = sessions.filter { $0.bookID == book.id }.sorted { $0.startedAt.seconds < $1.startedAt.seconds }
         guard let first = mine.first else { return [] }
         var points: [(Date, Int)] = [(first.startedAt.addingTimeInterval(-43_200), min(book.startPage, first.startPage))]
         var reached = 0

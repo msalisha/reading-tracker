@@ -201,7 +201,7 @@ struct TimerText: View {
     let state: ReadingActivityAttributes.ContentState
     var body: some View {
         if state.isRunning {
-            Text(timerInterval: state.clockStart...Date.distantFuture, countsDown: false)
+            Text(timerInterval: ClosedRange(uncheckedBounds: (lower: state.clockStart, upper: Date.distantFuture)), countsDown: false)
                 .monospacedDigit()
                 .multilineTextAlignment(.trailing)
         } else {
