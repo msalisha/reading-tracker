@@ -22,7 +22,12 @@ struct BookDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(alignment: .top, spacing: 16) {
-                    CoverView(data: book.coverData, title: book.title, width: 96)
+                    if store.access.canEdit {
+                        CoverButton(cover: Binding(get: { book.coverData }, set: { book.coverData = $0; Library.save(ctx) }),
+                                    title: book.title, author: book.author, isbn: book.isbn, width: 96)
+                    } else {
+                        CoverView(data: book.coverData, title: book.title, width: 96)
+                    }
                     VStack(alignment: .leading, spacing: 6) {
                         Text(book.title).font(.system(.title2, design: .rounded, weight: .heavy))
                         if !book.author.isEmpty { Text(book.author).foregroundStyle(.secondary) }

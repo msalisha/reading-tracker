@@ -52,7 +52,7 @@ struct AddBookSheet: View {
 
                 Section("Book") {
                     HStack(alignment: .top, spacing: 12) {
-                        if cover != nil || !title.isEmpty { CoverView(data: cover, title: title.isEmpty ? "?" : title, width: 54) }
+                        CoverButton(cover: $cover, title: title, author: author, isbn: isbn.isEmpty ? nil : isbn, width: 54)
                         VStack {
                             TextField("Book name", text: $title).font(.headline).accessibilityIdentifier("addTitle")
                             Divider()
