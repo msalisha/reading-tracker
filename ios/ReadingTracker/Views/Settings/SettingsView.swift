@@ -43,7 +43,12 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Button("Import a backup") { importing = true }
+                    if let message {
+                        Label(message, systemImage: message.hasPrefix("Imported") ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            .foregroundStyle(theme.brandText)
+                            .accessibilityIdentifier("importResult")
+                    }
+                    Button("Import a backup") { message = nil; importing = true }
                     if let exportFile {
                         ShareLink(item: exportFile) { Label("Save a backup", systemImage: "square.and.arrow.up") }
                     }
@@ -68,17 +73,20 @@ struct SettingsView: View {
             }
             .alert("Import this backup?", isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } })) {
                 Button("Import") {
-                    if let p = pending { Backup.restore(p, into: ctx); message = "Imported \(p.books.count) books and \(p.sessions.count) sessions." }
+                    guard let p = pending else { return }
                     pending = nil
+                    // Let the question close fully before changing the library, then show the result on the page (no second pop-up).
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(400))
+                        Backup.restore(p, into: ctx)
+                        message = "Imported \(p.books.count) books and \(p.sessions.count) sessions."
+                    }
                 }
                 Button("Cancel", role: .cancel) { pending = nil }
             } message: {
                 if let p = pending {
                     Text("It has \(p.books.count) books, \(p.sessions.count) sessions (\(p.totalPages.formatted()) pages) and \(p.notes.count) notes. Books already here with the same id are replaced.")
                 }
-            }
-            .alert(message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
-                Button("OK", role: .cancel) {}
             }
             .purchaseAlert()
             .task(id: books.count + sessions.count) { writeExports() }
