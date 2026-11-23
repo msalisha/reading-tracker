@@ -27,14 +27,18 @@ final class FlowUITests: XCTestCase {
         app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
     }
 
+    /// Clears a field (whatever is in it) and types new text.
     private func type(_ app: XCUIApplication, _ id: String, _ text: String) {
         let f = app.textFields[id]
         XCTAssertTrue(f.waitForExistence(timeout: 5), "missing field \(id)")
-        f.tap()
-        if let v = f.value as? String, !v.isEmpty, v != f.placeholderValue {
-            f.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: v.count))
+        // Tap at the right-hand end so the cursor lands after any existing text, then delete it all.
+        f.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        let existing = (f.value as? String) ?? ""
+        if !existing.isEmpty, existing != f.placeholderValue || !existing.isEmpty {
+            f.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count + 2))
         }
         f.typeText(text)
+        XCTAssertEqual(f.value as? String, text, "field \(id) should read \(text)")
     }
 
     func testAddBookTimeAndLog() {
