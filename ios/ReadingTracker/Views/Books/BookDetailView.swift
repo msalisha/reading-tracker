@@ -38,7 +38,7 @@ struct BookDetailView: View {
                 if book.status != .wantToRead {
                     VStack(alignment: .leading, spacing: 6) {
                         ProgressBar(fraction: pace.fraction, color: theme.brand)
-                        Text("Page \(pace.current) of \(book.totalPages) · \(pace.line)").font(.footnote).foregroundStyle(.secondary)
+                        Text(progressLine(pace)).font(.footnote).foregroundStyle(.secondary)
                     }
                 }
 
@@ -130,6 +130,18 @@ struct BookDetailView: View {
             }
             Button("Delete book", role: .destructive) { askDelete = true }
                 .font(.subheadline.weight(.semibold)).padding(.top, 6)
+        }
+    }
+
+    private func progressLine(_ pace: Pace) -> String {
+        switch book.status {
+        case .finished:
+            let took = Stats.daysTaken(book.snap, sessions: book.sessions.map(\.snap))
+            return "All \(book.totalPages.formatted()) pages read" + (took.map { " · took \($0) \($0 == 1 ? "day" : "days")" } ?? "")
+        case .dnf:
+            return "Stopped on page \(pace.current) of \(book.totalPages)"
+        default:
+            return "Page \(pace.current) of \(book.totalPages) · \(pace.line)"
         }
     }
 

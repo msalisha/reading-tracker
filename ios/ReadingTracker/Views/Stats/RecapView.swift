@@ -348,7 +348,7 @@ struct RecapSlideView: View {
     @ViewBuilder private func cover(_ b: BookSnap, width: CGFloat) -> some View {
         Group {
             if let data = covers[b.id], let img = UIImage(data: data) {
-                Image(uiImage: img).resizable().scaledToFill()
+                FittedCover(image: img)
             } else {
                 ZStack {
                     theme.brand
