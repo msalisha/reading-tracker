@@ -19,6 +19,10 @@ settings:
     TARGETED_DEVICE_FAMILY: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 
+# The test-purchase file is part of the project (for the scheme) but not built into the app.
+fileGroups:
+  - ReadingTracker/Store/ReadingTracker.storekit
+
 targets:
   ReadingTracker:
     type: application

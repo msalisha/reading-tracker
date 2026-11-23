@@ -80,9 +80,7 @@ struct SettingsView: View {
             .alert(message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
                 Button("OK", role: .cancel) {}
             }
-            .alert(store.message ?? "", isPresented: Binding(get: { store.message != nil }, set: { if !$0 { store.message = nil } })) {
-                Button("OK", role: .cancel) {}
-            }
+            .purchaseAlert()
             .task(id: books.count + sessions.count) { writeExports() }
         }
     }

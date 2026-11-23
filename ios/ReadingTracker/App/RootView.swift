@@ -9,6 +9,8 @@ struct RootView: View {
     @Environment(\.scenePhase) private var phase
     @AppStorage(AppTheme.storageKey, store: AppGroup.defaults) private var themeID = "neon"
     @AppStorage("appearance") private var appearance = "system"
+    /// Chose "Look around first" on the welcome screen this launch.
+    @State private var lookingAround = false
 
     private var theme: AppTheme { AppTheme.named(themeID) }
 
@@ -42,8 +44,8 @@ struct RootView: View {
                 RateBookSheet(book: book).environment(\.theme, theme)
             }
         }
-        .fullScreenCover(isPresented: .constant(store.access == .noTrial)) {
-            WelcomeView().environment(\.theme, theme)
+        .fullScreenCover(isPresented: Binding(get: { store.access == .noTrial && !lookingAround }, set: { _ in })) {
+            WelcomeView(onLookAround: { lookingAround = true }).environment(\.theme, theme)
         }
         .onOpenURL(perform: open)
         .onChange(of: phase) { _, now in

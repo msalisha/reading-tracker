@@ -174,6 +174,17 @@ struct TrialBanner: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("trialEnded")
+        case .noTrial:
+            Button { router.showPaywall = true } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Start your 3-day free trial").font(.headline)
+                    Text("You're looking around. Start the free trial to add books, time your reading and log pages.").font(.subheadline)
+                }
+                .foregroundStyle(theme.onBrand)
+                .card(theme.brand, radius: 16, padding: 14)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("trialNotStarted")
         default:
             EmptyView()
         }

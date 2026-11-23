@@ -22,6 +22,16 @@ struct PaywallView: View {
                 Text("One payment unlocks everything, for good. No subscription, no ads, and your reading stays on your phone.")
                     .foregroundStyle(.secondary)
                 FeatureList()
+                if store.access == .noTrial {
+                    Button {
+                        Task { await store.startTrial(); if store.access.canEdit { dismiss() } }
+                    } label: {
+                        Text(store.busy ? "Starting…" : "Start my 3-day free trial")
+                    }
+                    .buttonStyle(PillButton(kind: .highlight, big: true))
+                    .disabled(store.busy)
+                    .accessibilityIdentifier("paywallStartTrial")
+                }
                 Button {
                     Task { await store.unlock(); if store.access == .unlocked { dismiss() } }
                 } label: {
@@ -51,9 +61,7 @@ struct PaywallView: View {
                 .padding(16)
                 .accessibilityLabel("Close")
         }
-        .alert(store.message ?? "", isPresented: Binding(get: { store.message != nil }, set: { if !$0 { store.message = nil } })) {
-            Button("OK", role: .cancel) {}
-        }
+        .purchaseAlert()
     }
 
     private var headline: String {
@@ -79,6 +87,8 @@ struct FeatureList: View {
 
 /// First launch: start the 3-day free trial (a free in-app item, so the trial is tied to the Apple ID).
 struct WelcomeView: View {
+    /// Closes the welcome screen into read-only mode, so a failed or skipped trial never locks anyone out.
+    var onLookAround: () -> Void = {}
     @Environment(Store.self) private var store
     @Environment(\.theme) private var theme
 
@@ -105,6 +115,9 @@ struct WelcomeView: View {
                 .accessibilityIdentifier("startTrial")
                 Text("Free for 3 days, with everything included. After that, unlock it forever with one payment\(store.unlockPrice.isEmpty ? "" : " of \(store.unlockPrice)"). No subscription, and nothing is charged automatically.")
                     .font(.footnote).foregroundStyle(.secondary)
+                Button("Look around first", action: onLookAround)
+                    .buttonStyle(PillButton(kind: .outline, big: true))
+                    .accessibilityIdentifier("lookAround")
                 Button("Already bought it? Restore") { Task { await store.restore() } }
                     .font(.subheadline)
                     .frame(maxWidth: .infinity)
@@ -113,8 +126,32 @@ struct WelcomeView: View {
             .padding(24)
         }
         .interactiveDismissDisabled()
-        .alert(store.message ?? "", isPresented: Binding(get: { store.message != nil }, set: { if !$0 { store.message = nil } })) {
+        .purchaseAlert()
+    }
+}
+
+extension View {
+    /// Shows purchase messages. In builds run from Xcode, a failed purchase also offers "Unlock for testing".
+    func purchaseAlert() -> some View { modifier(PurchaseAlert()) }
+}
+
+private struct PurchaseAlert: ViewModifier {
+    @Environment(Store.self) private var store
+
+    func body(content: Content) -> some View {
+        content.alert(store.message ?? "", isPresented: Binding(get: { store.message != nil }, set: { if !$0 { store.message = nil } })) {
+            #if DEBUG
+            if store.purchaseFailed {
+                Button("Unlock for testing") { store.unlockForTesting() }
+            }
+            #endif
             Button("OK", role: .cancel) {}
+        } message: {
+            #if DEBUG
+            if store.purchaseFailed {
+                Text("Testing build only: you can unlock everything to keep testing. This option never appears in the App Store version.")
+            }
+            #endif
         }
     }
 }

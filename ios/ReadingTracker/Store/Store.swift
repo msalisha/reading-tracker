@@ -55,11 +55,13 @@ final class Store {
     private(set) var products: [String: Product] = [:]
     var busy = false
     var message: String?
+    /// True after a purchase attempt fails, so debug builds can offer a testing unlock.
+    var purchaseFailed = false
     /// Bumped when the app comes to the front, so a trial that ran out while away shows as ended.
     var now = Date()
 
     @ObservationIgnored private var updates: Task<Void, Never>?
-    @ObservationIgnored private var forced: Access?
+    private var forced: Access?
 
     var access: Access {
         if let forced { return forced }
@@ -100,6 +102,15 @@ final class Store {
     }
 
     func startTrial() async { await buy(Self.trialID) }
+
+    #if DEBUG
+    /// Only in builds run from Xcode: lets you use the app when test purchases aren't working.
+    func unlockForTesting() {
+        forced = .unlocked
+        purchaseFailed = false
+        message = nil
+    }
+    #endif
     func unlock() async { await buy(Self.unlockID) }
 
     func restore() async {
@@ -121,6 +132,7 @@ final class Store {
             return
         }
         busy = true
+        purchaseFailed = false
         defer { busy = false }
         do {
             switch try await product.purchase() {
@@ -135,7 +147,38 @@ final class Store {
                 break
             }
         } catch {
-            message = "The purchase didn't go through. You haven't been charged."
+            let text = StoreErrors.message(for: error)
+            if !text.isEmpty {
+                message = text
+                purchaseFailed = true
+            }
         }
+    }
+}
+
+/// Plain-English reasons a purchase failed.
+enum StoreErrors {
+    static let notAllowed = "In-app purchases are turned off on this iPhone. Turn them on in Settings → Screen Time → Content & Privacy Restrictions → iTunes & App Store Purchases → In-app Purchases, then try again."
+    static let network = "There's no connection to the App Store right now. Check your internet connection and try again. You haven't been charged."
+    static let unavailable = "This isn't available in your country's App Store yet. You haven't been charged."
+
+    /// Returns "" when the person simply cancelled.
+    static func message(for error: Error) -> String {
+        if let e = error as? Product.PurchaseError {
+            switch e {
+            case .purchaseNotAllowed: return notAllowed
+            case .productUnavailable: return unavailable
+            default: break
+            }
+        }
+        if let e = error as? StoreKitError {
+            switch e {
+            case .userCancelled: return ""
+            case .networkError: return network
+            case .notAvailableInStorefront: return unavailable
+            default: break
+            }
+        }
+        return "The purchase didn't go through (\(error.localizedDescription)). You haven't been charged."
     }
 }

@@ -123,6 +123,18 @@ final class FlowUITests: XCTestCase {
         shot(app, "08-paywall")
     }
 
+    func testLookAroundFirstIsReadOnly() {
+        let app = launch(["-uitest-sample"], access: "none")
+        XCTAssertTrue(app.buttons["lookAround"].waitForExistence(timeout: 5))
+        app.buttons["lookAround"].tap()
+        XCTAssertTrue(app.buttons["trialNotStarted"].waitForExistence(timeout: 5), "Today should offer the trial")
+        app.tabBars.buttons["Stats"].tap()
+        app.tabBars.buttons["Today"].tap()
+        app.buttons["openLog"].tap()
+        XCTAssertTrue(app.buttons["paywallStartTrial"].waitForExistence(timeout: 5), "logging should offer the trial")
+        shot(app, "09-paywall-no-trial")
+    }
+
     func testWelcomeScreen() {
         let app = launch(access: "none")
         XCTAssertTrue(app.buttons["startTrial"].waitForExistence(timeout: 5))

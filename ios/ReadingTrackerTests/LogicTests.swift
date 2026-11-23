@@ -1,5 +1,6 @@
 import XCTest
 import SwiftData
+import StoreKit
 @testable import ReadingTracker
 
 final class ISBNTests: XCTestCase {
@@ -140,6 +141,17 @@ final class AccessTests: XCTestCase {
         XCTAssertTrue(Access.trial(endsAt: start).canEdit)
         XCTAssertFalse(Access.expired.canEdit)
         XCTAssertFalse(Access.noTrial.canEdit)
+    }
+
+    func testPurchaseErrorsAreExplained() {
+        XCTAssertEqual(StoreErrors.message(for: Product.PurchaseError.purchaseNotAllowed), StoreErrors.notAllowed)
+        XCTAssertTrue(StoreErrors.message(for: Product.PurchaseError.purchaseNotAllowed).contains("Screen Time"))
+        XCTAssertEqual(StoreErrors.message(for: Product.PurchaseError.productUnavailable), StoreErrors.unavailable)
+        XCTAssertEqual(StoreErrors.message(for: StoreKitError.networkError(URLError(.notConnectedToInternet))), StoreErrors.network)
+        XCTAssertEqual(StoreErrors.message(for: StoreKitError.userCancelled), "")
+        let other = NSError(domain: "Test", code: 7, userInfo: [NSLocalizedDescriptionKey: "Something odd"])
+        XCTAssertTrue(StoreErrors.message(for: other).contains("Something odd"))
+        XCTAssertTrue(StoreErrors.message(for: other).contains("haven't been charged"))
     }
 
     func testTimeLeftWording() {

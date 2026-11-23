@@ -32,6 +32,12 @@ Outside the app:
 
 Re-run `xcodegen` whenever files are added or `project.yml` changes.
 
+**If "Start my 3-day free trial" fails while testing from Xcode:**
+- The message now says why. If it mentions **Screen Time**, turn on in-app purchases: iPhone **Settings → Screen Time → Content & Privacy Restrictions → iTunes & App Store Purchases → In-app Purchases → Allow**.
+- In Xcode, check **Product → Scheme → Edit Scheme… → Run → Options → StoreKit Configuration** says **ReadingTracker.storekit**. If it says None, choose it from the list.
+- In testing builds, the error box offers **Unlock for testing**. You can also add `-access unlocked` under **Run → Arguments**. Neither exists in the App Store version.
+- Anyone can tap **Look around first** to browse the app read-only without starting the trial.
+
 **Testing the trial in Xcode:** Debug → StoreKit → Manage Transactions shows the trial and unlock. Delete them to start again. To see the "trial ended" screen without waiting 3 days, run with the launch argument `-access expired` (Product → Scheme → Edit Scheme → Arguments). Other values are `trial`, `unlocked` and `none`. Add `-uitest -uitest-sample` to see a sample library.
 
 ## Putting it on the App Store
