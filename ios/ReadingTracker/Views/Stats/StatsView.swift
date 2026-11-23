@@ -184,7 +184,7 @@ struct MonthBoard: View {
         return parts.joined(separator: " · ")
     }
 
-    private func height(_ pages: Int) -> CGFloat { 110 + CGFloat(min(1, max(0, Double(pages - 100) / 600))) * 80 }
+    private func height(_ pages: Int) -> CGFloat { 150 + CGFloat(min(1, max(0, Double(pages - 100) / 600))) * 70 }
 
     private var shelf: some View {
         let colors = [theme.highlight, theme.brand, Color.white, theme.brand.opacity(0.55)]
@@ -207,25 +207,28 @@ struct MonthBoard: View {
             }
             .padding(.horizontal, 4)
         }
-        .frame(height: 200, alignment: .bottom)
+        .frame(height: 236, alignment: .bottom)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.boardMuted).frame(height: 5) }
     }
 
     private func spine(_ title: String, _ badge: String, fill: Color, text: Color, height: CGFloat, struck: Bool = false) -> some View {
-        VStack {
+        // The title is laid out as a normal line of text the length of the spine (up to two lines),
+        // then turned on its side so it reads bottom to top, like a book on a shelf.
+        let length = height - 40
+        return VStack(spacing: 4) {
             Text(title)
-                .font(.footnote.weight(.bold))
+                .font(.system(size: 12, weight: .bold))
                 .strikethrough(struck)
-                .lineLimit(1)
-                .fixedSize()
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+                .multilineTextAlignment(.leading)
+                .frame(width: length, height: 34, alignment: .leading)
                 .rotationEffect(.degrees(-90))
-                .frame(width: 20, height: height - 34)
-                .clipped()
-            Spacer(minLength: 0)
+                .frame(width: 34, height: length)
             Text(badge).font(.system(size: 11, weight: .black, design: .rounded))
         }
         .padding(.vertical, 8)
-        .frame(width: 42, height: height)
+        .frame(width: 46, height: height)
         .foregroundStyle(text)
         .background(fill, in: RoundedRectangle(cornerRadius: 6))
         .accessibilityElement()
