@@ -48,8 +48,19 @@ struct RecapView: View {
                                 .tag(item.offset)
                         }
                     }
-                    .tabViewStyle(.page(indexDisplayMode: .always))
+                    .tabViewStyle(.page(indexDisplayMode: .never))
                     .accessibilityIdentifier("recapSlides")
+
+                    // page dots below the card, so they don't sit on top of the artwork
+                    HStack(spacing: 7) {
+                        ForEach(0..<slides.count, id: \.self) { i in
+                            Circle()
+                                .fill(i == page ? theme.brandText : Color.secondary.opacity(0.3))
+                                .frame(width: i == page ? 8 : 7, height: i == page ? 8 : 7)
+                        }
+                    }
+                    .accessibilityElement()
+                    .accessibilityLabel("Page \(page + 1) of \(slides.count)")
 
                     if let shareImage {
                         ShareLink(item: Image(uiImage: shareImage),
@@ -138,7 +149,7 @@ struct RecapSlideView: View {
         if let background { return background }
         switch slide {
         case .intro: return .glow
-        case .books: return .shelf
+        case .books: return recap.finished.count <= 6 ? .shelf : .glow
         case .time: return .paper
         case .habits: return .glow
         case .favourite: return .openBook
@@ -180,12 +191,17 @@ struct RecapSlideView: View {
             Text(recap.period.isYear ? "A year of turning pages. Swipe to see it." : "A month of turning pages. Swipe to see it.")
                 .font(.title3.weight(.medium)).foregroundStyle(theme.boardMuted)
         case .books:
+            Spacer(minLength: 0)
             big("\(recap.finished.count)", recap.finished.count == 1 ? "book finished" : "books finished", theme.highlight)
-            shelf
+            finishedShowcase
+                .padding(.top, 6)
             if recap.writtenOff > 0 {
                 Text("…and \(recap.writtenOff) you wisely let go.").font(.subheadline).foregroundStyle(theme.boardMuted)
             }
+            Spacer(minLength: 0)
+            Spacer(minLength: 0)
         case .time:
+            Spacer(minLength: 0)
             big(recap.pages.formatted(), "pages read", theme.brand)
             if recap.minutes > 0 {
                 big(recap.hours >= 10 ? "\(Int(recap.hours.rounded()))" : String(format: "%.1f", recap.hours), "hours with a book", theme.highlight)
@@ -193,6 +209,7 @@ struct RecapSlideView: View {
             Text("Across \(recap.sessions) reading \(recap.sessions == 1 ? "session" : "sessions").")
                 .font(.title3.weight(.medium)).foregroundStyle(theme.boardMuted)
         case .habits:
+            Spacer(minLength: 0)
             big("\(recap.readingDays)", "of \(recap.daysElapsed) days you read", theme.brand)
             big("\(recap.longestStreak)", recap.longestStreak == 1 ? "day: your longest streak" : "days: your longest streak", theme.highlight)
             if let best = recap.bestDay {
@@ -200,9 +217,10 @@ struct RecapSlideView: View {
             }
             if let wd = recap.favouriteWeekday { line("Favourite reading day", wd + "s") }
         case .favourite:
+            Spacer(minLength: 0)
             if let top = recap.topBook {
                 Text("Top rated").font(.headline).foregroundStyle(theme.boardMuted)
-                bookFeature(top, caption: top.rating.map { String(repeating: "★", count: Int($0)) + ($0.truncatingRemainder(dividingBy: 1) > 0 ? "½" : "") })
+                bookFeature(top, caption: stars(top.rating))
             }
             if let long = recap.longestBook, long.id != recap.topBook?.id || recap.topBook == nil {
                 Text("Longest read").font(.headline).foregroundStyle(theme.boardMuted).padding(.top, 6)
@@ -265,10 +283,65 @@ struct RecapSlideView: View {
     }
 
     /// Covers of the finished books, overlapping like a fanned-out pile.
+    /// The books finished, sized to how many there are so the page always looks full but not crowded.
+    @ViewBuilder private var finishedShowcase: some View {
+        let books = recap.finished
+        let n = books.count
+        if n == 1, let b = books.first {
+            HStack(alignment: .bottom, spacing: 18) {
+                cover(b, width: 128)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(b.title).font(.title2.weight(.heavy)).lineLimit(4).minimumScaleFactor(0.7)
+                    if !b.author.isEmpty { Text(b.author).font(.subheadline).foregroundStyle(theme.boardMuted) }
+                    if let stars = stars(b.rating) { Text(stars).font(.title3).foregroundStyle(theme.highlight) }
+                    if let d = b.finishedDay { Text("Finished \(Day.short(d))").font(.subheadline.weight(.semibold)).foregroundStyle(theme.boardMuted) }
+                }
+            }
+        } else if n <= 3 {
+            let w: CGFloat = n == 2 ? 112 : 86
+            HStack(alignment: .top, spacing: 14) {
+                ForEach(books) { b in
+                    VStack(alignment: .leading, spacing: 6) {
+                        cover(b, width: w)
+                        Text(b.title).font(.caption.weight(.bold)).lineLimit(2).frame(width: w, alignment: .leading)
+                        if let stars = stars(b.rating) { Text(stars).font(.caption).foregroundStyle(theme.highlight) }
+                    }
+                }
+            }
+        } else {
+            let shown = Array(books.suffix(n > 12 ? 11 : 12))
+            let columns = n <= 6 ? 3 : 4
+            let w: CGFloat = n <= 6 ? 78 : 58
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(w), spacing: 12, alignment: .leading), count: columns),
+                      alignment: .leading, spacing: 12) {
+                ForEach(shown) { b in cover(b, width: w) }
+                if n > 12 {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous).fill(theme.boardGrid)
+                        Text("+\(n - shown.count)\nmore").font(.system(size: 15, weight: .heavy, design: .rounded))
+                            .multilineTextAlignment(.center).foregroundStyle(theme.boardText)
+                    }
+                    .frame(width: w, height: w * 1.5)
+                }
+            }
+        }
+    }
+
+    private func stars(_ rating: Double?) -> String? {
+        guard let r = rating, r > 0 else { return nil }
+        return String(repeating: "★", count: Int(r)) + (r.truncatingRemainder(dividingBy: 1) > 0 ? "½" : "")
+    }
+
+    /// A compact row of covers for the summary page.
     private var shelf: some View {
-        let shown = Array(recap.finished.suffix(12))
-        return HStack(spacing: shown.count > 6 ? -18 : 8) {
-            ForEach(shown) { b in cover(b, width: shown.count > 6 ? 46 : 54) }
+        let n = recap.finished.count
+        let shown = Array(recap.finished.suffix(n > 8 ? 8 : n))
+        let w: CGFloat = n <= 4 ? 58 : 44
+        return HStack(spacing: n > 5 ? -12 : 8) {
+            ForEach(shown) { b in cover(b, width: w) }
+            if n > shown.count {
+                Text("+\(n - shown.count)").font(.headline.weight(.heavy)).foregroundStyle(theme.boardMuted).padding(.leading, 18)
+            }
         }
     }
 
