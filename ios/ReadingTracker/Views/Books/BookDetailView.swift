@@ -10,6 +10,7 @@ struct BookDetailView: View {
     @Environment(\.theme) private var theme
     @Environment(\.dismiss) private var dismiss
     @State private var noteDraft: NoteDraft?
+    @State private var cardNote: BookNote?
     @State private var editing = false
     @State private var askDelete = false
 
@@ -59,9 +60,10 @@ struct BookDetailView: View {
                         EmptyCard(text: "Capture quotes you love and thoughts as you read. You can scan a quote straight from the page.")
                     }
                     ForEach(notes) { note in
-                        NoteRow(note: note)
+                        NoteRow(note: note, onShare: { cardNote = note })
                             .onTapGesture { if store.access.canEdit { noteDraft = NoteDraft(note: note, kind: note.kind) } }
                             .contextMenu {
+                                Button { cardNote = note } label: { Label("Share as a picture", systemImage: "photo") }
                                 Button { UIPasteboard.general.string = note.text } label: { Label("Copy", systemImage: "doc.on.doc") }
                                 ShareLink(item: shareText(note)) { Label("Share", systemImage: "square.and.arrow.up") }
                                 Button(role: .destructive) { ctx.delete(note); Library.save(ctx) } label: { Label("Delete", systemImage: "trash") }
@@ -98,6 +100,7 @@ struct BookDetailView: View {
                 Button("Edit") { if store.access.canEdit { editing = true } else { router.showPaywall = true } }
             }
         }
+        .sheet(item: $cardNote) { QuoteCardSheet(note: $0).environment(\.theme, theme) }
         .sheet(item: $noteDraft) { draft in
             NoteEditor(book: book, draft: draft).environment(\.theme, theme)
         }
@@ -151,6 +154,8 @@ struct BookDetailView: View {
 struct NoteRow: View {
     let note: BookNote
     var showBook = false
+    /// Shows a share button that turns the note into a picture.
+    var onShare: (() -> Void)? = nil
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -162,6 +167,15 @@ struct NoteRow: View {
                 if showBook, let b = note.book { Text("· \(b.title)").font(.caption).foregroundStyle(.secondary).lineLimit(1) }
                 Spacer()
                 Text(note.createdAt.formatted(date: .abbreviated, time: .omitted)).font(.caption).foregroundStyle(.secondary)
+                if let onShare {
+                    Button(action: onShare) {
+                        Image(systemName: "square.and.arrow.up").font(.subheadline.weight(.semibold)).foregroundStyle(theme.brandText)
+                            .padding(.leading, 4)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("Share as a picture")
+                    .accessibilityIdentifier("shareCard")
+                }
             }
             Text(note.kind == .quote ? "“\(note.text)”" : note.text)
                 .font(note.kind == .quote ? .body.italic() : .body)

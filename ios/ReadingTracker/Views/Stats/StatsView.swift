@@ -8,12 +8,14 @@ struct StatsView: View {
     @Query private var sessions: [ReadingSession]
     @AppStorage("statsRange") private var rangeRaw = ChartRange.day.rawValue
     @AppStorage("statsDays") private var avgDays = 30
+    @State private var recapPeriod: Recap.Period?
 
     var body: some View {
         let bs = books.map(\.snap), ss = sessions.map(\.snap), now = Date()
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
+                    recapButtons(now)
                     MonthBoard(summary: Stats.month(books: bs, sessions: ss, now: now),
                                reading: books.filter { $0.status == .reading }.map { ($0.snap, Stats.pace($0.snap, sessions: ss, now: now).fraction) },
                                now: now)
@@ -25,7 +27,37 @@ struct StatsView: View {
                 .padding(.bottom, 24)
             }
             .navigationTitle("Stats")
+            .fullScreenCover(item: $recapPeriod) { p in
+                RecapView(period: p).environment(\.theme, theme)
+            }
         }
+    }
+
+    /// Story-style recaps: this month, and the year so far (last year too during January).
+    private func recapButtons(_ now: Date) -> some View {
+        let month = Recap.Period.thisMonth(now)
+        let year = Day.calendar.component(.month, from: now) == 1 ? Recap.Period.lastYear(now) : Recap.Period.thisYear(now)
+        return HStack(spacing: 10) {
+            recapButton("Your \(month.shortTitle)", "Monthly recap", icon: "sparkles", fill: theme.brand, text: theme.onBrand) { recapPeriod = month }
+                .accessibilityIdentifier("recapMonth")
+            recapButton("Your \(year.shortTitle)", "Year in review", icon: "trophy", fill: theme.highlight, text: theme.onHighlight) { recapPeriod = year }
+                .accessibilityIdentifier("recapYear")
+        }
+    }
+
+    private func recapButton(_ title: String, _ sub: String, icon: String, fill: Color, text: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 6) {
+                Image(systemName: icon).font(.headline)
+                Text(title).font(.system(.headline, design: .rounded, weight: .heavy)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(sub).font(.caption.weight(.semibold)).opacity(0.8)
+            }
+            .foregroundStyle(text)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(fill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     private var range: ChartRange { ChartRange(rawValue: rangeRaw) ?? .day }

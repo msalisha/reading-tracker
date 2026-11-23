@@ -124,6 +124,66 @@ final class StatsTests: XCTestCase {
     }
 }
 
+final class RecapTests: XCTestCase {
+    private let now = Day.date("2026-11-20").addingTimeInterval(20 * 3600)
+
+    private func s(_ book: String, _ day: String, _ from: Int, _ to: Int, _ minutes: Int? = nil) -> SessionSnap {
+        SessionSnap(id: UUID().uuidString, bookID: book, day: day, startedAt: Day.date(day).addingTimeInterval(19 * 3600),
+                    startPage: from, endPage: to, pages: to - from, minutes: minutes)
+    }
+
+    func testMonthlyRecap() {
+        let books = [
+            BookSnap(id: "a", title: "Alpha", totalPages: 200, status: .finished, finishedDay: "2026-11-12", rating: 4),
+            BookSnap(id: "b", title: "Beta", totalPages: 500, status: .finished, finishedDay: "2026-11-18", rating: 4.5),
+            BookSnap(id: "c", title: "Gamma", totalPages: 300, status: .finished, finishedDay: "2026-10-02", rating: 5),
+            BookSnap(id: "d", title: "Delta", totalPages: 100, status: .dnf, dnfDay: "2026-11-05"),
+        ]
+        let sessions = [
+            s("a", "2026-11-10", 0, 100, 60), s("a", "2026-11-11", 100, 150, 30), s("a", "2026-11-12", 150, 200),
+            s("b", "2026-11-17", 0, 300, 120), s("b", "2026-11-18", 300, 500),
+            s("c", "2026-10-01", 0, 300),
+        ]
+        let notes = [Recap.NoteInput(text: "Old quote", isQuote: true, day: "2026-10-03", bookTitle: "Gamma", author: ""),
+                     Recap.NoteInput(text: "New quote", isQuote: true, day: "2026-11-15", bookTitle: "Alpha", author: "A"),
+                     Recap.NoteInput(text: "A thought", isQuote: false, day: "2026-11-19", bookTitle: "Beta", author: "")]
+        let r = Recap.make(.thisMonth(now), books: books, sessions: sessions, notes: notes, now: now)
+        XCTAssertEqual(r.period.title, "November 2026")
+        XCTAssertEqual(r.finished.map(\.title), ["Alpha", "Beta"])
+        XCTAssertEqual(r.writtenOff, 1)
+        XCTAssertEqual(r.pages, 700)
+        XCTAssertEqual(r.minutes, 210)
+        XCTAssertEqual(r.sessions, 5)
+        XCTAssertEqual(r.readingDays, 5)
+        XCTAssertEqual(r.daysElapsed, 20)
+        XCTAssertEqual(r.longestStreak, 3)
+        XCTAssertEqual(r.bestDay?.day, "2026-11-17")
+        XCTAssertEqual(r.bestDay?.pages, 300)
+        XCTAssertEqual(r.topBook?.title, "Beta")
+        XCTAssertEqual(r.longestBook?.title, "Beta")
+        XCTAssertEqual(r.fastest?.book.title, "Beta")
+        XCTAssertEqual(r.fastest?.days, 2)
+        XCTAssertEqual(r.averageRating ?? 0, 4.25, accuracy: 0.001)
+        XCTAssertEqual(r.quote?.text, "New quote")
+        XCTAssertEqual(r.favouriteWeekday, "Tuesday") // 17 Nov 2026, 300 pages
+        XCTAssertFalse(r.isEmpty)
+    }
+
+    func testYearAndEmptyPeriods() {
+        let books = [BookSnap(id: "c", title: "Gamma", totalPages: 300, status: .finished, finishedDay: "2026-10-02")]
+        let sessions = [s("c", "2026-10-01", 0, 300)]
+        let year = Recap.make(.thisYear(now), books: books, sessions: sessions, notes: [], now: now)
+        XCTAssertEqual(year.period.title, "2026")
+        XCTAssertEqual(year.finished.count, 1)
+        XCTAssertEqual(year.pages, 300)
+        XCTAssertEqual(year.daysElapsed, Day.daysBetween(Day.date("2026-01-01"), now) + 1)
+        let last = Recap.make(.lastYear(now), books: books, sessions: sessions, notes: [], now: now)
+        XCTAssertTrue(last.isEmpty)
+        XCTAssertEqual(Recap.Period.lastMonth(now).title, "October 2026")
+        XCTAssertEqual(RecapSlide.slides(for: last), [.intro, .summary])
+    }
+}
+
 final class TimerTests: XCTestCase {
     func testPauseResumeKeepsTime() {
         let t0 = Date(timeIntervalSince1970: 1_000_000)

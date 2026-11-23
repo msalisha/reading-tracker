@@ -13,6 +13,7 @@ struct LogView: View {
     @Query(sort: \BookNote.createdAt, order: .reverse) private var notes: [BookNote]
     @State private var mode: Mode = .sessions
     @State private var search = ""
+    @State private var cardNote: BookNote?
 
     var body: some View {
         NavigationStack {
@@ -29,6 +30,7 @@ struct LogView: View {
             .listStyle(.insetGrouped)
             .navigationTitle("Reading log")
             .searchable(text: $search, prompt: mode == .sessions ? "Search books" : "Search quotes and thoughts")
+            .sheet(item: $cardNote) { QuoteCardSheet(note: $0).environment(\.theme, theme) }
         }
     }
 
@@ -76,7 +78,7 @@ struct LogView: View {
                 .foregroundStyle(.secondary)
         }
         ForEach(list) { note in
-            NoteRow(note: note, showBook: true)
+            NoteRow(note: note, showBook: true, onShare: { cardNote = note })
                 .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                 .listRowBackground(Color.clear)
                 .swipeActions {

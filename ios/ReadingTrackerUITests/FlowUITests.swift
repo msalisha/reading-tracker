@@ -135,6 +135,37 @@ final class FlowUITests: XCTestCase {
         shot(app, "09-paywall-no-trial")
     }
 
+    func testQuoteCard() {
+        let app = launch(["-uitest-sample"])
+        app.tabBars.buttons["Books"].tap()
+        element(app, "Pride and Prejudice").tap()
+        let share = app.buttons["shareCard"].firstMatch
+        XCTAssertTrue(share.waitForExistence(timeout: 5))
+        share.tap()
+        XCTAssertTrue(app.buttons["cardShare"].waitForExistence(timeout: 5), "the card should render and be shareable")
+        shot(app, "10-quote-card")
+        app.buttons["Story"].tap()
+        shot(app, "11-quote-card-story")
+    }
+
+    func testRecap() {
+        let app = launch(["-uitest-sample"])
+        app.tabBars.buttons["Stats"].tap()
+        XCTAssertTrue(app.buttons["recapMonth"].waitForExistence(timeout: 5))
+        app.buttons["recapMonth"].tap()
+        XCTAssertTrue(app.buttons["recapShare"].waitForExistence(timeout: 5), "the recap should render and be shareable")
+        shot(app, "12-recap-intro")
+        let slides = app.descendants(matching: .any)["recapSlides"]
+        for i in 1...3 {
+            slides.swipeLeft()
+            shot(app, "12-recap-\(i)")
+        }
+        app.buttons["Done"].tap()
+        app.buttons["recapYear"].tap()
+        XCTAssertTrue(app.buttons["recapShare"].waitForExistence(timeout: 5))
+        shot(app, "13-year-in-review")
+    }
+
     func testWelcomeScreen() {
         let app = launch(access: "none")
         XCTAssertTrue(app.buttons["startTrial"].waitForExistence(timeout: 5))
