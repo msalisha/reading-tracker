@@ -85,7 +85,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { pending = nil }
             } message: {
                 if let p = pending {
-                    Text("It has \(p.books.count) books, \(p.sessions.count) sessions (\(p.totalPages.formatted()) pages) and \(p.notes.count) notes. Books already here with the same id are replaced.")
+                    Text("It has \(p.books.count) books, \(p.sessions.count) sessions (\(p.totalPages.formatted()) pages) and \(p.notes.count) notes. Books you already have are updated, not duplicated.")
                 }
             }
             .purchaseAlert()

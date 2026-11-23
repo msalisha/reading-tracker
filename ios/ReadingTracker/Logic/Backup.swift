@@ -70,40 +70,64 @@ enum Backup {
     /// Adds the backup to the library. Books already in the library (same id) are replaced.
     @MainActor
     static func restore(_ contents: Contents, into ctx: ModelContext) {
-        // Remove anything being replaced first, and commit that, so the new copies don't clash with the old ids.
-        var removed = false
-        for r in contents.books {
-            if let existing = Library.book(ctx, uid: r.id) {
-                existing.sessions.forEach { ctx.delete($0) }
-                existing.notes.forEach { ctx.delete($0) }
-                ctx.delete(existing)
-                removed = true
-            }
-        }
-        let sessionIDs = Set(contents.sessions.map(\.id)), noteIDs = Set(contents.notes.map(\.id))
-        for s in (try? ctx.fetch(FetchDescriptor<ReadingSession>())) ?? [] where sessionIDs.contains(s.uid) { ctx.delete(s); removed = true }
-        for n in (try? ctx.fetch(FetchDescriptor<BookNote>())) ?? [] where noteIDs.contains(n.uid) { ctx.delete(n); removed = true }
-        if removed { try? ctx.save() }
-
+        // Update anything already here in place and add the rest. Nothing is deleted, so no screen
+        // is ever left holding a removed record while the import runs.
         var byID: [String: Book] = [:]
+        for b in (try? ctx.fetch(FetchDescriptor<Book>())) ?? [] { byID[b.uid] = b }
+        var sessionsByID: [String: ReadingSession] = [:]
+        for x in (try? ctx.fetch(FetchDescriptor<ReadingSession>())) ?? [] { sessionsByID[x.uid] = x }
+        var notesByID: [String: BookNote] = [:]
+        for x in (try? ctx.fetch(FetchDescriptor<BookNote>())) ?? [] { notesByID[x.uid] = x }
+
         for r in contents.books {
-            let b = Book(uid: r.id, title: r.title, author: r.author, isbn: r.isbn, totalPages: r.totalPages,
-                         startPage: r.startPage, status: r.status, addedAt: r.addedAt, lastAt: r.lastAt)
+            let b: Book
+            if let existing = byID[r.id] {
+                b = existing
+            } else {
+                b = Book(uid: r.id, title: r.title, totalPages: r.totalPages)
+                ctx.insert(b)
+                byID[r.id] = b
+            }
+            b.title = r.title
+            b.author = r.author
+            b.isbn = r.isbn
+            b.totalPages = r.totalPages
+            b.startPage = r.startPage
+            b.status = r.status
+            b.addedAt = r.addedAt
+            b.lastAt = r.lastAt
             b.finishedDay = r.finishedDay
             b.dnfDay = r.dnfDay
             b.dnfNote = r.dnfNote
             b.rating = r.rating
-            ctx.insert(b)
-            byID[r.id] = b
         }
         for r in contents.sessions {
             guard let b = byID[r.bookID] else { continue }
-            ctx.insert(ReadingSession(uid: r.id, book: b, startedAt: r.startedAt, startPage: r.startPage,
-                                      endPage: r.endPage, minutes: r.minutes, createdAt: r.createdAt, day: r.day))
+            if let x = sessionsByID[r.id] {
+                x.book = b
+                x.startedAt = r.startedAt
+                x.day = r.day
+                x.startPage = r.startPage
+                x.endPage = r.endPage
+                x.pages = r.endPage - r.startPage
+                x.minutes = r.minutes
+            } else {
+                let x = ReadingSession(uid: r.id, book: b, startedAt: r.startedAt, startPage: r.startPage,
+                                       endPage: r.endPage, minutes: r.minutes, createdAt: r.createdAt, day: r.day)
+                ctx.insert(x)
+                sessionsByID[r.id] = x
+            }
         }
         for r in contents.notes {
             guard let b = byID[r.bookID] else { continue }
-            ctx.insert(BookNote(uid: r.id, book: b, kind: r.kind, text: r.text, page: r.page, createdAt: r.createdAt))
+            if let x = notesByID[r.id] {
+                x.book = b
+                x.kind = r.kind
+                x.text = r.text
+                x.page = r.page
+            } else {
+                ctx.insert(BookNote(uid: r.id, book: b, kind: r.kind, text: r.text, page: r.page, createdAt: r.createdAt))
+            }
         }
         Library.save(ctx)
     }

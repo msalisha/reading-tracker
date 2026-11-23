@@ -2,29 +2,27 @@ import Foundation
 
 /// Calendar helpers. Days are kept as "yyyy-MM-dd" keys in the reader's own time zone, the same as the web app.
 enum Day {
+    /// A plain value (no shared formatter objects), so it's safe to use from anywhere.
     static var calendar: Calendar {
         var c = Calendar(identifier: .gregorian)
-        c.timeZone = .current
+        c.timeZone = .autoupdatingCurrent
         c.firstWeekday = 2 // weeks start on Monday
         return c
     }
 
-    private static let keyFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.calendar = Calendar(identifier: .gregorian)
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = .current
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
+    static func key(_ date: Date) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 1970, c.month ?? 1, c.day ?? 1)
+    }
 
-    static func key(_ date: Date) -> String { keyFormatter.string(from: date) }
     static func monthKey(_ date: Date) -> String { String(key(date).prefix(7)) }
 
     /// Midnight at the start of the day a key names (or of the month, for a "yyyy-MM" key).
     static func date(_ key: String) -> Date {
-        let full = key.count == 7 ? key + "-01" : String(key.prefix(10))
-        return keyFormatter.date(from: full) ?? .distantPast
+        let parts = key.prefix(10).split(separator: "-").map { Int($0) }
+        guard parts.count >= 2, let y = parts[0], let m = parts[1] else { return .distantPast }
+        let d = parts.count >= 3 ? (parts[2] ?? 1) : 1
+        return calendar.date(from: DateComponents(year: y, month: m, day: d)) ?? .distantPast
     }
 
     static func add(_ days: Int, to date: Date) -> Date {

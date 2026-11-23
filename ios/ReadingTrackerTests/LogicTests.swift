@@ -22,6 +22,24 @@ final class ISBNTests: XCTestCase {
     }
 }
 
+final class DayTests: XCTestCase {
+    func testKeysRoundTrip() {
+        for key in ["2026-01-01", "2026-02-28", "2026-03-29", "2026-10-25", "2026-11-23", "2026-12-31", "2028-02-29"] {
+            XCTAssertEqual(Day.key(Day.date(key)), key)
+        }
+        XCTAssertEqual(Day.monthKey(Day.date("2026-11-23")), "2026-11")
+        XCTAssertEqual(Day.key(Day.date("2026-11")), "2026-11-01")
+        XCTAssertEqual(Day.key(Day.date("2026-10-30T13:40")), "2026-10-30")
+        XCTAssertEqual(Day.date("nonsense"), .distantPast)
+    }
+
+    func testWeeksStartOnMonday() {
+        XCTAssertEqual(Day.key(Day.startOfWeek(Day.date("2026-11-23"))), "2026-11-23") // a Monday
+        XCTAssertEqual(Day.key(Day.startOfWeek(Day.date("2026-11-22"))), "2026-11-16") // a Sunday
+        XCTAssertEqual(Day.daysInMonth(Day.date("2026-02-10")), 28)
+    }
+}
+
 final class StatsTests: XCTestCase {
     private let now = Day.date("2026-11-18").addingTimeInterval(20 * 3600) // Wed 18 Nov 2026, 8pm
 
@@ -200,10 +218,16 @@ final class BackupTests: XCTestCase {
         XCTAssertEqual(again.notes.first?.text, "Think different.")
         XCTAssertEqual(again.books.first { $0.title.hasPrefix("Apple") }?.rating, 4.5)
 
-        // Importing the same backup twice doesn't duplicate anything.
+        // Importing the same backup twice doesn't duplicate anything, and the stats still work afterwards.
         Backup.restore(again, into: ctx)
-        XCTAssertEqual(try ctx.fetch(FetchDescriptor<Book>()).count, 4)
-        XCTAssertEqual(try ctx.fetch(FetchDescriptor<ReadingSession>()).count, 40)
+        Backup.restore(try Backup.parse(fixture()), into: ctx)
+        let allBooks = try ctx.fetch(FetchDescriptor<Book>())
+        let allSessions = try ctx.fetch(FetchDescriptor<ReadingSession>())
+        XCTAssertEqual(allBooks.count, 4)
+        XCTAssertEqual(allSessions.count, 40)
+        let scores = Stats.scores(books: allBooks.map(\.snap), sessions: allSessions.map(\.snap), now: Day.date("2026-11-15"))
+        XCTAssertEqual(scores.finishedThisMonth, 1)
+        XCTAssertGreaterThan(scores.month, 0)
         XCTAssertTrue(Backup.csv(ctx).hasPrefix("Book,Author,Status"))
     }
 
