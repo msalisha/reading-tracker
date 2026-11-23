@@ -53,7 +53,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Your data")
                 } footer: {
-                    Text("Everything is stored on this iPhone: \(books.count) books and \(sessions.count) sessions. Import a backup from the web Reading Tracker (Log → Save a backup) to bring your history across.")
+                    Text("Everything is stored on this iPhone: \(books.count) books and \(sessions.count) sessions. Import a backup from Pageturner or the web Reading Tracker (Log → Save a backup) to bring your history across.")
                 }
 
                 Section("About") {
@@ -117,15 +117,15 @@ struct SettingsView: View {
         do {
             pending = try Backup.parse(try Data(contentsOf: url))
         } catch {
-            message = "That file isn't a Reading Tracker backup."
+            message = "That file isn't a Pageturner or Reading Tracker backup."
         }
     }
 
     private func writeExports() {
         let dir = FileManager.default.temporaryDirectory
         let stamp = Day.key(.now)
-        let json = dir.appendingPathComponent("reading-tracker-\(stamp).json")
-        let csv = dir.appendingPathComponent("reading-tracker-\(stamp).csv")
+        let json = dir.appendingPathComponent("pageturner-\(stamp).json")
+        let csv = dir.appendingPathComponent("pageturner-\(stamp).csv")
         do {
             try Backup.export(ctx).write(to: json)
             try Backup.csv(ctx).data(using: .utf8)?.write(to: csv)

@@ -55,7 +55,7 @@ struct RootView: View {
         .task { Library.refreshWidgets(ctx) }
     }
 
-    /// readingtracker://timer opens Today; readingtracker://start?book=ID starts the timer for that book.
+    /// pageturner://timer opens Today; pageturner://start?book=ID starts the timer for that book.
     private func open(_ url: URL) {
         guard url.scheme == Links.scheme else { return }
         router.tab = .today

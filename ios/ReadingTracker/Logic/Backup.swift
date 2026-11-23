@@ -26,7 +26,7 @@ enum Backup {
 
     enum Problem: LocalizedError {
         case notABackup
-        var errorDescription: String? { "That file isn't a Reading Tracker backup." }
+        var errorDescription: String? { "That file isn't a Pageturner or Reading Tracker backup." }
     }
 
     // MARK: reading

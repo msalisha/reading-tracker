@@ -71,7 +71,7 @@ enum BookLookup {
 
     private static func get(_ url: URL) async throws -> Data {
         var req = URLRequest(url: url, timeoutInterval: 10)
-        req.setValue("ReadingTracker-iOS", forHTTPHeaderField: "User-Agent")
+        req.setValue("Pageturner-iOS", forHTTPHeaderField: "User-Agent")
         let (data, resp) = try await URLSession.shared.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { throw URLError(.badServerResponse) }
         return data

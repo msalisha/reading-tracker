@@ -1,6 +1,6 @@
-# Reading Tracker for iPhone
+# Pageturner for iPhone
 
-A native SwiftUI app (iOS 17+) rebuilt from the web tracker, ready to sell on the App Store as a free download with a **3-day free trial** and a **one-off unlock**.
+**Pageturner** is a native SwiftUI app (iOS 17+) rebuilt from the web Reading Tracker, ready to sell on the App Store as a free download with a **3-day free trial** and a **one-off unlock**.
 
 ## What's in it
 
@@ -17,15 +17,15 @@ Outside the app:
 - **Lock screen and Dynamic Island:** the timer, with Pause and Resume buttons.
 - **Widgets:** streak (home screen and lock screen) and current book (with a Start timer button).
 
-**Your data:** your web-tracker backup imports straight in (Settings → Import a backup). The unit tests import your actual 4 books and 40 sessions to prove it.
+**Your data:** your web Reading Tracker backup imports straight in (Settings → Import a backup). The unit tests import your actual 4 books and 40 sessions to prove it.
 
 ## First run on your Mac
 
 1. Install Xcode (from the Mac App Store) and XcodeGen: `brew install xcodegen`
 2. Get the code: `git clone https://github.com/msalisha/reading-tracker && cd reading-tracker/ios`
 3. Open `project.yml` and set:
-   - `APP_BUNDLE_ID`: your own reverse-domain id, e.g. `com.yourname.dogear`
-   - `APP_DISPLAY_NAME`: the name under the icon
+   - `APP_BUNDLE_ID`: your own reverse-domain id, e.g. `com.yourname.pageturner` (it's `com.example.pageturner` until you change it)
+   - `APP_DISPLAY_NAME`: the name under the icon (already `Pageturner`)
    - `DEVELOPMENT_TEAM`: your Team ID (Xcode → Settings → Accounts, or developer.apple.com → Membership)
 4. `xcodegen` creates `ReadingTracker.xcodeproj`. Open it.
 5. Choose your iPhone as the run destination and press **Run**. The trial and purchase use the local `ReadingTracker.storekit` file, so nothing is charged while testing.
@@ -42,7 +42,7 @@ Re-run `xcodegen` whenever files are added or `project.yml` changes.
    - Create the group `group.<your bundle id>`.
    - Register `<bundle id>.widgets` with the same group.
    - Xcode's automatic signing can do all of this for you on first run.
-2. **My Apps → +** New App: platform iOS, your name, primary language, the bundle ID, and a SKU (anything, e.g. `reading-tracker-1`).
+2. **My Apps → +** New App: platform iOS, name **Pageturner** (if it's taken, try *Pageturner: Reading Tracker* or *Pageturner – Reading Log*; the name under the icon can stay Pageturner), primary language, the bundle ID, and a SKU (anything, e.g. `pageturner-1`).
 3. **In-App Purchases** (Monetization → In-App Purchases), create two **Non-Consumable** items:
 
    | Product ID | Reference name | Price | Display name | Description |
