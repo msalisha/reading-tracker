@@ -177,23 +177,16 @@ struct CoverView: View {
     }
 }
 
-/// Shows a whole cover in a book-shaped (2:3) box. Pictures close to that shape fill the box;
-/// wider or taller ones (a photo, a picture with a border) fit inside it on a soft blurred copy of themselves,
-/// so nothing is cut off.
+/// Shows the whole cover in a book-shaped (2:3) box, never cropping it. If the picture isn't exactly that shape,
+/// the spare space is filled with a soft blurred copy of the picture, so it still looks like a cover.
 struct FittedCover: View {
     let image: UIImage
 
     var body: some View {
-        let ratio = image.size.height / max(1, image.size.width) // a typical cover is about 1.5
-        if ratio > 1.38 && ratio < 1.62 {
-            Image(uiImage: image).resizable().scaledToFill()
-        } else {
-            ZStack {
-                Image(uiImage: image).resizable().scaledToFill().blur(radius: 14).opacity(0.75)
-                Color.black.opacity(0.12)
-                Image(uiImage: image).resizable().scaledToFit()
-                    .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
-            }
+        ZStack {
+            Image(uiImage: image).resizable().scaledToFill().blur(radius: 14).opacity(0.75)
+            Color.black.opacity(0.1)
+            Image(uiImage: image).resizable().scaledToFit()
         }
     }
 }
