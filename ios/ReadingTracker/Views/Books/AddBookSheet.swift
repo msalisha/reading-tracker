@@ -19,6 +19,8 @@ struct AddBookSheet: View {
     @State private var cover: Data?
     @State private var coverURL: URL?
     @State private var lookupMessage: String?
+    @State private var notInCatalogues = false
+    @State private var googleQuery: GoogleQuery?
     @State private var looking = false
     @State private var scanning = false
     @State private var error: String?
@@ -45,9 +47,20 @@ struct AddBookSheet: View {
                     HStack {
                         TextField("978…", text: $isbn).keyboardType(.numberPad)
                         Button(looking ? "Looking…" : "Look up") { Task { await lookUp() } }
+                            .buttonStyle(.borderless) // only the button, not the whole row, starts a lookup
                             .disabled(looking || isbn.isEmpty)
+                            .accessibilityIdentifier("isbnLookUp")
                     }
-                    if let lookupMessage { Text(lookupMessage).font(.footnote).foregroundStyle(.secondary) }
+                    if let lookupMessage {
+                        Text(lookupMessage).font(.footnote).foregroundStyle(.secondary)
+                            .accessibilityIdentifier("lookupMessage")
+                    }
+                    if notInCatalogues, let code = ISBN.normalize(isbn) {
+                        Button { googleQuery = GoogleQuery(text: "\(code) book") } label: {
+                            Label("Search Google Images for this ISBN", systemImage: "magnifyingglass")
+                        }
+                        .buttonStyle(.borderless)
+                    }
                 }
 
                 Section("Book") {
@@ -93,6 +106,9 @@ struct AddBookSheet: View {
                     Task { await lookUp() }
                 }
             }
+            .sheet(item: $googleQuery) { q in
+                GoogleCoverSearchSheet(query: q.text) { cover = $0 }
+            }
             .onAppear { status = defaultStatus }
         }
     }
@@ -108,11 +124,20 @@ struct AddBookSheet: View {
             return
         }
         looking = true
+        notInCatalogues = false
         lookupMessage = "Looking up the book…"
         defer { looking = false }
-        guard let found = await BookLookup.find(isbn: code) else {
-            lookupMessage = "Couldn't find that book. Fill in the details below."
+        let found: BookLookup.Found
+        switch await BookLookup.lookup(isbn: code) {
+        case .offline:
+            lookupMessage = "Couldn't reach the book catalogues. Check your internet connection and tap Look up again."
             return
+        case .notFound:
+            notInCatalogues = true
+            lookupMessage = "This ISBN isn't in the free book catalogues yet (common for new or local editions). Type the details below, and find the cover on Google."
+            return
+        case .found(let f):
+            found = f
         }
         title = found.title
         if !found.author.isEmpty { author = found.author }

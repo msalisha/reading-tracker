@@ -13,7 +13,7 @@ struct CoverButton: View {
 
     @Environment(\.theme) private var theme
     @State private var showOptions = false
-    @State private var showSearch = false
+    @State private var googleQuery: GoogleQuery?
     @State private var showPhotos = false
     @State private var showCamera = false
     @State private var photoItem: PhotosPickerItem?
@@ -41,7 +41,7 @@ struct CoverButton: View {
             if let code = isbn.flatMap(ISBN.normalize) {
                 Button("Use the cover for ISBN \(code)") { Task { await fromISBN(code) } }
             }
-            Button("Search online") { showSearch = true }
+            Button("Search Google Images") { googleQuery = GoogleQuery(text: GoogleCovers.query(title: title, author: author)) }
             Button("Choose from Photos") { showPhotos = true }
             if UIImagePickerController.isSourceTypeAvailable(.camera) {
                 Button("Take a photo") { showCamera = true }
@@ -50,8 +50,8 @@ struct CoverButton: View {
                 Button("Remove cover", role: .destructive) { cover = nil }
             }
         }
-        .sheet(isPresented: $showSearch) {
-            CoverSearchSheet(title: title, author: author, isbn: isbn ?? "") { cover = $0 }
+        .sheet(item: $googleQuery) { q in
+            GoogleCoverSearchSheet(query: q.text) { cover = $0 }
         }
         .photosPicker(isPresented: $showPhotos, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in
@@ -77,109 +77,28 @@ struct CoverButton: View {
         }
     }
 
+    /// The catalogues' cover for this ISBN; if they don't have one, search Google Images for the ISBN instead.
     private func fromISBN(_ code: String) async {
         working = true
-        defer { working = false }
-        let found = await BookLookup.find(isbn: code)
-        if let data = await BookLookup.cover(isbn: code, fallback: found?.coverURL) {
+        let outcome = await BookLookup.lookup(isbn: code)
+        var fallback: URL?
+        if case .found(let f) = outcome { fallback = f.coverURL }
+        let data = outcome == .offline ? nil : await BookLookup.cover(isbn: code, fallback: fallback)
+        working = false
+        if let data {
             cover = data
+        } else if outcome == .offline {
+            message = "Couldn't reach the book catalogues. Check your internet connection and try again."
         } else {
-            message = "There's no cover online for ISBN \(code). Try Search online, or take a photo of your copy."
+            googleQuery = GoogleQuery(text: "\(code) book cover")
         }
     }
 }
 
-/// Search Open Library and Google Books for covers by ISBN, title and author, then pick one.
-struct CoverSearchSheet: View {
-    @State var title: String
-    @State var author: String
-    @State var isbn: String
-    var onPick: (Data) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.theme) private var theme
-    @State private var results: [URL] = []
-    @State private var searching = false
-    @State private var searched = false
-    @State private var downloading: URL?
-    @State private var failed = false
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    VStack(spacing: 8) {
-                        TextField("Book name", text: $title).textFieldStyle(.roundedBorder)
-                        TextField("Author (optional)", text: $author).textFieldStyle(.roundedBorder)
-                        TextField("ISBN (optional)", text: $isbn).textFieldStyle(.roundedBorder).keyboardType(.numberPad)
-                        Button(searching ? "Searching…" : "Search") { Task { await search() } }
-                            .buttonStyle(PillButton(kind: .brand))
-                            .disabled(searching || (title.trimmingCharacters(in: .whitespaces).isEmpty && ISBN.normalize(isbn) == nil))
-                            .accessibilityIdentifier("coverSearch")
-                    }
-                    if searching {
-                        ProgressView().frame(maxWidth: .infinity).padding(.top, 30)
-                    } else if searched && results.isEmpty {
-                        Text("No covers found. Try a shorter title, just the author's surname, or choose a photo instead.")
-                            .foregroundStyle(.secondary).padding(.top, 20)
-                    } else if !results.isEmpty {
-                        Text("Tap the cover that matches your copy.").font(.subheadline).foregroundStyle(.secondary)
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 14) {
-                            ForEach(results, id: \.self) { url in
-                                Button { Task { await pick(url) } } label: {
-                                    AsyncImage(url: url) { phase in
-                                        switch phase {
-                                        case .success(let img): img.resizable().scaledToFill()
-                                        case .failure: Color(.systemGray5).overlay(Image(systemName: "photo").foregroundStyle(.secondary))
-                                        default: Color(.systemGray6).overlay(ProgressView())
-                                        }
-                                    }
-                                    .frame(width: 96, height: 144)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                    .overlay {
-                                        if downloading == url {
-                                            RoundedRectangle(cornerRadius: 8).fill(.black.opacity(0.4)).overlay(ProgressView().tint(.white))
-                                        }
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(downloading != nil)
-                            }
-                        }
-                    }
-                    if failed {
-                        Text("That cover couldn't be downloaded. Try another.").font(.footnote).foregroundStyle(theme.brandText)
-                    }
-                    Text("Covers come from Open Library and Google Books.").font(.caption).foregroundStyle(.secondary).padding(.top, 8)
-                }
-                .padding(16)
-            }
-            .navigationTitle("Find a cover")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
-            .task { if !searched { await search() } }
-        }
-    }
-
-    private func search() async {
-        searching = true
-        failed = false
-        results = await BookLookup.coverCandidates(title: title, author: author, isbn: ISBN.normalize(isbn))
-        searching = false
-        searched = true
-    }
-
-    private func pick(_ url: URL) async {
-        downloading = url
-        failed = false
-        defer { downloading = nil }
-        if let data = await BookLookup.download(url) {
-            onPick(data)
-            dismiss()
-        } else {
-            failed = true
-        }
-    }
+/// What to search Google Images for.
+struct GoogleQuery: Identifiable {
+    let text: String
+    var id: String { text }
 }
 
 /// The camera, for photographing your own copy's cover.

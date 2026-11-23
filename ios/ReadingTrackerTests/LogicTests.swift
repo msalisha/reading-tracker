@@ -23,6 +23,39 @@ import StoreKit
     }
 }
 
+@Suite struct CoverSearchTests {
+    @Test func googleSearchAddress() {
+        let q = GoogleCovers.query(title: "Café & Co: A Story", author: " Zoë Brontë ")
+        #expect(q == "Café & Co: A Story Zoë Brontë book cover")
+        let url = GoogleCovers.searchURL(query: q)
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        #expect(url.host == "www.google.com")
+        #expect(items.first { $0.name == "tbm" }?.value == "isch")
+        #expect(items.first { $0.name == "q" }?.value == q) // survives encoding of &, :, accents and spaces
+        #expect(GoogleCovers.query(title: "Dune", author: "") == "Dune book cover")
+    }
+
+    @Test func decodesPicturesFromThePage() async {
+        // a 2×2 red PNG
+        let png = "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4z8DAwMDAxMDAAAAoBgH/uMqbbwAAAABJRU5ErkJggg=="
+        #expect(await GoogleCovers.imageData(fromSource: "data:image/png;base64," + png) != nil)
+        #expect(await GoogleCovers.imageData(fromSource: "data:image/png;base64,not-a-picture") == nil)
+        #expect(await GoogleCovers.imageData(fromSource: "javascript:alert(1)") == nil)
+        #expect(await GoogleCovers.imageData(fromSource: "") == nil)
+    }
+
+    @Test func mergesCatalogueAnswers() {
+        let a = BookLookup.Found(title: "Piranesi", author: "", pages: 272, coverURL: nil)
+        let b = BookLookup.Found(title: "Piranesi (Bloomsbury)", author: "Susanna Clarke", pages: 245, coverURL: URL(string: "https://x/1.jpg"))
+        let c = BookLookup.Found(title: "PIRANESI", author: "Clarke, Susanna", pages: 272, coverURL: URL(string: "https://x/2.jpg"))
+        let m = BookLookup.merge([a, b, c])
+        #expect(m.title == "Piranesi")
+        #expect(m.author == "Clarke, Susanna" || m.author == "Susanna Clarke")
+        #expect(m.pages == 272)
+        #expect(m.coverURL == URL(string: "https://x/1.jpg"))
+    }
+}
+
 @Suite struct DayTests {
     @Test func testKeysRoundTrip() {
         for key in ["2026-01-01", "2026-02-28", "2026-03-29", "2026-10-25", "2026-11-23", "2026-12-31", "2028-02-29"] {

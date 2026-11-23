@@ -8,7 +8,7 @@
 |---|---|
 | **Today** | Scores (today, streak, week, month, books finished), the reading timer (choose a book, set the starting page, start, pause, Done, log the page you got to) with optional **Focus sounds** (rain, café or fireplace, keeps playing with the screen locked), log a session by hand, books on the go |
 | **Books** | On the go (progress, pace, reading line, timer with pause/resume), **Want to read**, the shelf (finished and written off). **Add a book** by scanning its barcode (finds the title, author, pages and **cover**) or typing it |
-| **Book page** | Cover, progress, **star rating** (optional, half stars), **notes**: quotes and thoughts with an optional page number, **scan a quote from the page** with the camera, **share any quote as a picture** (square or story size, in any colour scheme), copy, edit details |
+| **Book page** | Cover (tap it to use the ISBN's cover, **search Google Images** inside the app, choose from Photos or take a photo), progress, **star rating** (optional, half stars), **notes**: quotes and thoughts with an optional page number, **scan a quote from the page** with the camera, **share any quote as a picture** (square or story size, in any colour scheme), copy, edit details |
 | **Stats** | **Monthly recap** and **Year in review** (story-style pages you can swipe and share as pictures), finished this month (spines and calendar), pages by day, week or month, your average day, books per month and average rating |
 | **Log** | Every session by day (swipe to delete), plus **search across all your notes** |
 | **Settings** | **6 colour schemes** (the app icon changes to match), light/dark, purchase and Restore, import and export a backup (JSON), spreadsheet export (CSV) |
