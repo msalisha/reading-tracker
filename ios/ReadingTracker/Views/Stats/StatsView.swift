@@ -56,7 +56,10 @@ struct StatsView: View {
                     .accessibilityLabel(b.detail)
             }
             .chartXAxis { AxisMarks { _ in AxisValueLabel().foregroundStyle(theme.boardMuted) } }
-            .chartYAxis { AxisMarks { _ in AxisGridLine().foregroundStyle(theme.boardGrid); AxisValueLabel().foregroundStyle(theme.boardMuted) } }
+            .chartYAxis { AxisMarks { _ in
+                AxisGridLine().foregroundStyle(theme.boardGrid)
+                AxisValueLabel().foregroundStyle(theme.boardMuted)
+            } }
             .frame(height: 200)
         }
     }
@@ -67,7 +70,9 @@ struct StatsView: View {
             ?? "Last \(avgDays) days. Use the timer to see your pace"
         return board("Your average day", sub) {
             Picker("Average over", selection: $avgDays) {
-                Text("7 days").tag(7); Text("30 days").tag(30); Text("90 days").tag(90)
+                Text("7 days").tag(7)
+                Text("30 days").tag(30)
+                Text("90 days").tag(90)
             }
             .pickerStyle(.segmented)
             HStack(alignment: .top) {
@@ -108,7 +113,10 @@ struct StatsView: View {
             }
         }
         .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in AxisValueLabel(format: .dateTime.day().month(.abbreviated)).foregroundStyle(theme.boardMuted) } }
-        .chartYAxis { AxisMarks { _ in AxisGridLine().foregroundStyle(theme.boardGrid); AxisValueLabel().foregroundStyle(theme.boardMuted) } }
+        .chartYAxis { AxisMarks { _ in
+                AxisGridLine().foregroundStyle(theme.boardGrid)
+                AxisValueLabel().foregroundStyle(theme.boardMuted)
+            } }
         .frame(height: 150)
     }
 
@@ -129,7 +137,10 @@ struct StatsView: View {
             .chartForegroundStyleScale(["Finished": theme.highlight, "Written off": Color.gray])
             .chartLegend(.visible)
             .chartXAxis { AxisMarks { _ in AxisValueLabel().foregroundStyle(theme.boardMuted) } }
-            .chartYAxis { AxisMarks { _ in AxisGridLine().foregroundStyle(theme.boardGrid); AxisValueLabel().foregroundStyle(theme.boardMuted) } }
+            .chartYAxis { AxisMarks { _ in
+                AxisGridLine().foregroundStyle(theme.boardGrid)
+                AxisValueLabel().foregroundStyle(theme.boardMuted)
+            } }
             .frame(height: 180)
         }
     }
@@ -185,7 +196,8 @@ struct MonthBoard: View {
                 ForEach(summary.writtenOff) { b in
                     spine(b.title, "DNF", fill: Color(hex: 0x5E5E66), text: .white, height: height(b.totalPages), struck: true)
                 }
-                ForEach(reading, id: \.0.id) { b, pct in
+                ForEach(reading, id: \.0.id) { item in
+                    let (b, pct) = item
                     ZStack(alignment: .bottom) {
                         RoundedRectangle(cornerRadius: 6).fill(theme.brand.opacity(0.4)).frame(height: height(b.totalPages) * pct)
                         spine(b.title, "\(Int((pct * 100).rounded()))%", fill: .clear, text: theme.boardText, height: height(b.totalPages))

@@ -69,8 +69,8 @@ struct FeatureList: View {
     @Environment(\.theme) private var theme
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(features, id: \.1) { icon, text in
-                Label { Text(text) } icon: { Image(systemName: icon).foregroundStyle(theme.brandText).frame(width: 28) }
+            ForEach(features, id: \.1) { feature in
+                Label { Text(feature.1) } icon: { Image(systemName: feature.0).foregroundStyle(theme.brandText).frame(width: 28) }
             }
         }
         .font(.body.weight(.medium))

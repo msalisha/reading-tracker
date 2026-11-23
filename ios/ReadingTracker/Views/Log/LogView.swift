@@ -47,9 +47,9 @@ struct LogView: View {
             Text("\(sessions.count) sessions · \(total.formatted()) pages all time").font(.footnote).foregroundStyle(.secondary)
                 .listRowBackground(Color.clear)
         }
-        ForEach(groups, id: \.key) { day, list in
-            Section(Day.long(day)) {
-                ForEach(list) { s in
+        ForEach(groups, id: \.key) { group in
+            Section(Day.long(group.key)) {
+                ForEach(group.value) { s in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(s.book?.title ?? "Deleted book").font(.subheadline.weight(.semibold))

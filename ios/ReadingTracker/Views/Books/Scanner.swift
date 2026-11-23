@@ -9,7 +9,7 @@ struct ScannerView: UIViewControllerRepresentable {
     var onBarcode: (String) -> Void = { _ in }
     var onText: (String) -> Void = { _ in }
 
-    static var isAvailable: Bool {
+    @MainActor static var isAvailable: Bool {
         DataScannerViewController.isSupported && DataScannerViewController.isAvailable
     }
 
@@ -38,6 +38,7 @@ struct ScannerView: UIViewControllerRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
+    @MainActor
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
         let parent: ScannerView
         private var done = false
