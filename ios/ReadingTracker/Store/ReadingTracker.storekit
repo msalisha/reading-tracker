@@ -1,0 +1,53 @@
+{
+  "identifier" : "4C2F9E1A",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "0.0",
+      "familyShareable" : false,
+      "internalID" : "6740000001",
+      "localizations" : [
+        {
+          "description" : "Use every feature free for 3 days.",
+          "displayName" : "3-Day Free Trial",
+          "locale" : "en_GB"
+        }
+      ],
+      "productID" : "trial.3day",
+      "referenceName" : "3-Day Free Trial",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : true,
+      "internalID" : "6740000002",
+      "localizations" : [
+        {
+          "description" : "Unlock everything, forever. One payment, no subscription.",
+          "displayName" : "Unlock forever",
+          "locale" : "en_GB"
+        }
+      ],
+      "productID" : "unlock.lifetime",
+      "referenceName" : "Unlock forever",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_GB",
+    "_storefront" : "GBR",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

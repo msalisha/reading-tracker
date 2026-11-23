@@ -1,0 +1,62 @@
+name: iOS app
+
+on:
+  push:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tools
+        run: |
+          brew install xcodegen
+          xcodebuild -version
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Pick an iPhone simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)["devices"]
+          phones = [x for k, v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone") and "Pro" in x["name"]]
+          phones = phones or [x for k, v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")]
+          print(phones[-1]["udid"])')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl list devices available | grep "$UDID"
+
+      - name: Build and run tests
+        env:
+          TEST_RUNNER_SCREENSHOT_DIR: ${{ runner.temp }}/screenshots
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project ReadingTracker.xcodeproj \
+            -scheme ReadingTracker \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee build.log | grep -E "error:|warning: .*\.swift|Test Case .*(passed|failed)|Executed|\*\* (BUILD|TEST)" || true
+          grep -q "\*\* TEST SUCCEEDED \*\*" build.log || { echo "---- last 120 lines ----"; tail -120 build.log; exit 1; }
+
+      - name: Upload screenshots and log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-results
+          path: |
+            ${{ runner.temp }}/screenshots
+            ios/build.log
+          if-no-files-found: ignore

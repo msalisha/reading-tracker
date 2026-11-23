@@ -1,0 +1,126 @@
+# XcodeGen spec. Run `xcodegen` in this folder to create ReadingTracker.xcodeproj.
+# Change APP_BUNDLE_ID, APP_DISPLAY_NAME and DEVELOPMENT_TEAM below before your first device build.
+name: ReadingTracker
+options:
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    APP_BUNDLE_ID: com.example.readingtracker
+    APP_DISPLAY_NAME: Reading Tracker
+    APP_GROUP: group.$(APP_BUNDLE_ID)
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+targets:
+  ReadingTracker:
+    type: application
+    platform: iOS
+    sources:
+      - path: ReadingTracker
+        excludes:
+          - "**/*.storekit"
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_NAME: ReadingTracker
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    info:
+      path: ReadingTracker/Info.plist
+      properties:
+        CFBundleDisplayName: $(APP_DISPLAY_NAME)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        AppGroup: $(APP_GROUP)
+        UILaunchScreen: {}
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSCameraUsageDescription: Scan book barcodes and capture quotes from pages.
+        NSSupportsLiveActivities: true
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleURLTypes:
+          - CFBundleURLName: reading-tracker
+            CFBundleURLSchemes: [readingtracker]
+    entitlements:
+      path: ReadingTracker/ReadingTracker.entitlements
+      properties:
+        com.apple.security.application-groups: [$(APP_GROUP)]
+    dependencies:
+      - target: ReadingWidgets
+
+  ReadingWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ReadingWidgets
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_NAME: ReadingWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).widgets
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) WIDGET_EXTENSION
+        SKIP_INSTALL: YES
+    info:
+      path: ReadingWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: $(APP_DISPLAY_NAME)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        AppGroup: $(APP_GROUP)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: ReadingWidgets/ReadingWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [$(APP_GROUP)]
+
+  ReadingTrackerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ReadingTrackerTests
+    dependencies:
+      - target: ReadingTracker
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).tests
+
+  ReadingTrackerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ReadingTrackerUITests
+    dependencies:
+      - target: ReadingTracker
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).uitests
+        TEST_TARGET_NAME: ReadingTracker
+
+schemes:
+  ReadingTracker:
+    build:
+      targets:
+        ReadingTracker: all
+    run:
+      config: Debug
+      storeKitConfiguration: ReadingTracker/Store/ReadingTracker.storekit
+    test:
+      config: Debug
+      targets:
+        - ReadingTrackerTests
+        - ReadingTrackerUITests
+    archive:
+      config: Release
