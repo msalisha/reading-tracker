@@ -112,8 +112,11 @@ struct TimerCard: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
+                if let t = timer, t.status != .running, focus == .to {
+                    Button("Log it", action: logIt).fontWeight(.bold).accessibilityIdentifier("keyboardLogIt")
+                }
                 Spacer()
-                Button("Done") { focus = nil }
+                Button("Done") { focus = nil }.accessibilityIdentifier("keyboardDone")
             }
         }
     }

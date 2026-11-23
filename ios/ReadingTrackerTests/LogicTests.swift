@@ -196,7 +196,8 @@ final class BackupTests: XCTestCase {
     }
 
     func testLoggingFinishesTheBook() throws {
-        let ctx = Persistence.makeContainer(inMemory: true).mainContext
+        let container = Persistence.makeContainer(inMemory: true) // keep the store alive for the whole test
+        let ctx = container.mainContext
         let b = Book(title: "Short", totalPages: 50)
         ctx.insert(b)
         XCTAssertFalse(Library.logSession(ctx, book: b, startedAt: .now, from: 0, to: 30, minutes: 20))
@@ -206,5 +207,6 @@ final class BackupTests: XCTestCase {
         XCTAssertEqual(b.finishedDay, Day.key(.now))
         XCTAssertEqual(Library.problem(from: 30, to: 30, totalPages: 50), "You started on page 30, so the finishing page needs to be higher.")
         XCTAssertNil(Library.problem(from: 0, to: 50, totalPages: 50))
+        withExtendedLifetime(container) {}
     }
 }

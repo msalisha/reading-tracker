@@ -50,6 +50,7 @@ final class FlowUITests: XCTestCase {
         app.tabBars.buttons["Today"].tap()
         XCTAssertTrue(app.buttons["timerStart"].waitForExistence(timeout: 5))
         type(app, "timerFrom", "20")
+        if app.buttons["keyboardDone"].exists { app.buttons["keyboardDone"].tap() }
         app.buttons["timerStart"].tap()
         XCTAssertTrue(app.buttons["timerPause"].waitForExistence(timeout: 5))
         sleep(2)
@@ -58,8 +59,15 @@ final class FlowUITests: XCTestCase {
         app.buttons["timerResume"].tap()
         app.buttons["timerDone"].tap()
         type(app, "timerTo", "45")
-        app.buttons["timerLog"].tap()
-        XCTAssertTrue(app.buttons["timerStart"].waitForExistence(timeout: 5), "timer should reset after logging")
+        // The keyboard covers the card's Log it button, so use the one above the keyboard.
+        if app.buttons["keyboardLogIt"].waitForExistence(timeout: 3) {
+            app.buttons["keyboardLogIt"].tap()
+        } else {
+            app.buttons["keyboardDone"].tap()
+            app.buttons["timerLog"].tap()
+        }
+        if !app.buttons["timerStart"].waitForExistence(timeout: 5) { shot(app, "fail-after-log") }
+        XCTAssertTrue(app.buttons["timerStart"].exists, "timer should reset after logging")
         XCTAssertTrue(app.staticTexts["25"].exists || app.staticTexts.containing(NSPredicate(format: "label CONTAINS '25'")).count > 0)
 
         app.tabBars.buttons["Log"].tap()
