@@ -60,7 +60,7 @@ jobs:
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee build.log | grep -E "error:|warning: .*\.swift|Test Case .*(passed|failed)|Executed|\*\* (BUILD|TEST)" || true
+            2>&1 | tee build.log | grep -iE "error:|warning: .*\.swift|Test case .*(passed|failed)|recorded an issue|Executed|\*\* (BUILD|TEST)" || true
           grep -q "\*\* TEST SUCCEEDED \*\*" build.log || { echo "---- last 120 lines ----"; tail -120 build.log; exit 1; }
 
       - name: Upload screenshots and log

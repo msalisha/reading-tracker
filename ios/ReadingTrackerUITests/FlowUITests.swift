@@ -23,6 +23,17 @@ final class FlowUITests: XCTestCase {
         }
     }
 
+    /// Taps a tab. On iOS 26 the tab bar shrinks after scrolling down, so scroll back up first if needed.
+    private func tab(_ app: XCUIApplication, _ name: String) {
+        let button = app.tabBars.buttons[name]
+        if !button.waitForExistence(timeout: 2) || !button.isHittable {
+            app.swipeDown()
+            app.swipeDown()
+        }
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "missing tab \(name)")
+        button.tap()
+    }
+
     private func element(_ app: XCUIApplication, _ text: String) -> XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
     }
@@ -43,7 +54,7 @@ final class FlowUITests: XCTestCase {
 
     func testAddBookTimeAndLog() {
         let app = launch()
-        app.tabBars.buttons["Books"].tap()
+        tab(app, "Books")
         app.buttons["addBook"].tap()
         type(app, "addTitle", "The Test Book")
         type(app, "addAuthor", "A. Writer")
@@ -51,7 +62,7 @@ final class FlowUITests: XCTestCase {
         app.buttons["addSave"].tap()
         XCTAssertTrue(element(app, "The Test Book").waitForExistence(timeout: 5))
 
-        app.tabBars.buttons["Today"].tap()
+        tab(app, "Today")
         XCTAssertTrue(app.buttons["timerStart"].waitForExistence(timeout: 5))
         type(app, "timerFrom", "20")
         if app.buttons["keyboardDone"].exists { app.buttons["keyboardDone"].tap() }
@@ -82,13 +93,13 @@ final class FlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["25"].exists || app.staticTexts.containing(NSPredicate(format: "label CONTAINS '25'")).count > 0)
 
         app.buttons["sound-off"].tap()
-        app.tabBars.buttons["Log"].tap()
+        tab(app, "Log")
         XCTAssertTrue(app.staticTexts["+25"].waitForExistence(timeout: 5))
     }
 
     func testNotesRatingAndTheme() {
         let app = launch(["-uitest-sample"])
-        app.tabBars.buttons["Books"].tap()
+        tab(app, "Books")
         element(app, "Pride and Prejudice").tap()
         XCTAssertTrue(app.buttons["addThought"].waitForExistence(timeout: 5))
         app.buttons["addThought"].tap()
@@ -100,23 +111,23 @@ final class FlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Mr Darcy improves on a second reading."].waitForExistence(timeout: 5))
         shot(app, "04-book-detail")
 
-        app.tabBars.buttons["Settings"].tap()
+        tab(app, "Settings")
         app.buttons["theme-ocean"].tap()
         shot(app, "06-settings")
-        app.tabBars.buttons["Today"].tap()
+        tab(app, "Today")
         shot(app, "07-today-ocean")
     }
 
     func testScreenshots() {
         let app = launch(["-uitest-sample"])
         shot(app, "01-today")
-        app.tabBars.buttons["Books"].tap()
+        tab(app, "Books")
         shot(app, "02-books")
-        app.tabBars.buttons["Stats"].tap()
+        tab(app, "Stats")
         shot(app, "03-stats")
         app.swipeUp()
         shot(app, "03b-stats-more")
-        app.tabBars.buttons["Log"].tap()
+        tab(app, "Log")
         shot(app, "05-log")
     }
 
@@ -133,8 +144,8 @@ final class FlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["lookAround"].waitForExistence(timeout: 5))
         app.buttons["lookAround"].tap()
         XCTAssertTrue(app.buttons["trialNotStarted"].waitForExistence(timeout: 5), "Today should offer the trial")
-        app.tabBars.buttons["Stats"].tap()
-        app.tabBars.buttons["Today"].tap()
+        tab(app, "Stats")
+        tab(app, "Today")
         app.buttons["openLog"].tap()
         XCTAssertTrue(app.buttons["paywallStartTrial"].waitForExistence(timeout: 5), "logging should offer the trial")
         shot(app, "09-paywall-no-trial")
@@ -142,7 +153,7 @@ final class FlowUITests: XCTestCase {
 
     func testQuoteCard() {
         let app = launch(["-uitest-sample"])
-        app.tabBars.buttons["Books"].tap()
+        tab(app, "Books")
         element(app, "Pride and Prejudice").tap()
         let share = app.buttons["shareCard"].firstMatch
         XCTAssertTrue(share.waitForExistence(timeout: 5))
@@ -159,7 +170,7 @@ final class FlowUITests: XCTestCase {
 
     func testRecap() {
         let app = launch(["-uitest-sample"])
-        app.tabBars.buttons["Stats"].tap()
+        tab(app, "Stats")
         XCTAssertTrue(app.buttons["recapMonth"].waitForExistence(timeout: 5))
         app.buttons["recapMonth"].tap()
         XCTAssertTrue(app.buttons["recapShare"].waitForExistence(timeout: 5), "the recap should render and be shareable")

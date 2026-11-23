@@ -13,6 +13,7 @@ enum Day {
     static var calendar: Calendar {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = .autoupdatingCurrent
+        c.locale = .autoupdatingCurrent // weekday and month names in the reader's language
         c.firstWeekday = 2 // weeks start on Monday
         return c
     }
