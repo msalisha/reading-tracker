@@ -13,6 +13,10 @@ struct RecapView: View {
     @Query private var notes: [BookNote]
     @State private var page = 0
     @State private var shareImage: UIImage?
+    /// "Auto" picks a matching background for each page; otherwise one style for every page.
+    @AppStorage("recapBackground") private var backgroundRaw = "Auto"
+
+    private var chosen: CardBackground? { CardBackground(rawValue: backgroundRaw) }
 
     private var covers: [String: Data] {
         var m: [String: Data] = [:]
@@ -38,7 +42,7 @@ struct RecapView: View {
                 } else {
                     TabView(selection: $page) {
                         ForEach(Array(slides.enumerated()), id: \.offset) { item in
-                            RecapSlideView(slide: item.element, recap: r, covers: covers, theme: theme)
+                            RecapSlideView(slide: item.element, recap: r, covers: covers, theme: theme, background: chosen)
                                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                                 .padding(.horizontal, 20)
                                 .tag(item.offset)
@@ -65,6 +69,15 @@ struct RecapView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
+                        Picker("Background", selection: $backgroundRaw) {
+                            Label("Matching each page", systemImage: "wand.and.stars").tag("Auto")
+                            ForEach(CardBackground.allCases) { Label($0.rawValue, systemImage: $0.icon).tag($0.rawValue) }
+                        }
+                    } label: { Label("Background", systemImage: "paintbrush") }
+                    .accessibilityIdentifier("recapBackground")
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
                         let now = Date()
                         Button("This month") { choose(.thisMonth(now)) }
                         Button("Last month") { choose(.lastMonth(now)) }
@@ -76,6 +89,7 @@ struct RecapView: View {
             .onAppear { render(slides, r) }
             .onChange(of: page) { _, _ in render(slides, r) }
             .onChange(of: period) { _, _ in render(RecapSlide.slides(for: recap), recap) }
+            .onChange(of: backgroundRaw) { _, _ in render(slides, r) }
         }
     }
 
@@ -88,7 +102,7 @@ struct RecapView: View {
     @MainActor private func render(_ slides: [RecapSlide], _ r: Recap) {
         guard !slides.isEmpty, !r.isEmpty else { shareImage = nil; return }
         let slide = slides[min(page, slides.count - 1)]
-        let view = RecapSlideView(slide: slide, recap: r, covers: covers, theme: theme)
+        let view = RecapSlideView(slide: slide, recap: r, covers: covers, theme: theme, background: chosen)
             .frame(width: 360, height: 640)
         let renderer = ImageRenderer(content: view)
         renderer.scale = 3
@@ -116,6 +130,22 @@ struct RecapSlideView: View {
     let recap: Recap
     let covers: [String: Data]
     let theme: AppTheme
+    /// nil = the matching background for this page.
+    var background: CardBackground? = nil
+
+    /// Each page gets a background that suits it.
+    private var style: CardBackground {
+        if let background { return background }
+        switch slide {
+        case .intro: return .glow
+        case .books: return .shelf
+        case .time: return .paper
+        case .habits: return .glow
+        case .favourite: return .openBook
+        case .quote: return .paper
+        case .summary: return recap.finished.isEmpty ? .glow : .confetti
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -135,7 +165,7 @@ struct RecapSlideView: View {
         }
         .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(theme.board)
+        .background(CardBackdrop(style: style, theme: theme))
         .foregroundStyle(theme.boardText)
         .environment(\.colorScheme, .dark)
     }

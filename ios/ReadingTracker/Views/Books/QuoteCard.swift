@@ -17,6 +17,7 @@ struct QuoteCard: View {
     let page: Int?
     let theme: AppTheme
     let shape: Shape
+    var background: CardBackground = .glow
 
     var body: some View {
         let story = shape == .story
@@ -57,7 +58,7 @@ struct QuoteCard: View {
         }
         .padding(story ? 34 : 26)
         .frame(width: shape.size.width, height: shape.size.height)
-        .background(theme.board)
+        .background(CardBackdrop(style: background, theme: theme))
         .environment(\.colorScheme, .dark)
     }
 }
@@ -70,9 +71,11 @@ struct QuoteCardSheet: View {
     @Environment(\.theme) private var currentTheme
     @State private var shape: QuoteCard.Shape = .square
     @State private var themeID = ""
+    @AppStorage("cardBackground") private var backgroundRaw = CardBackground.glow.rawValue
     @State private var image: UIImage?
 
     private var cardTheme: AppTheme { AppTheme.named(themeID.isEmpty ? currentTheme.id : themeID) }
+    private var background: CardBackground { CardBackground(rawValue: backgroundRaw) ?? .glow }
 
     var body: some View {
         NavigationStack {
@@ -94,6 +97,8 @@ struct QuoteCardSheet: View {
                         ForEach(QuoteCard.Shape.allCases) { Text($0.rawValue).tag($0) }
                     }
                     .pickerStyle(.segmented)
+
+                    BackgroundPicker(selection: $backgroundRaw, theme: cardTheme)
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 10) {
@@ -136,14 +141,46 @@ struct QuoteCardSheet: View {
             .onAppear { if themeID.isEmpty { themeID = currentTheme.id }; render() }
             .onChange(of: shape) { _, _ in render() }
             .onChange(of: themeID) { _, _ in render() }
+            .onChange(of: backgroundRaw) { _, _ in render() }
         }
     }
 
     @MainActor private func render() {
         let card = QuoteCard(text: note.text, isQuote: note.kind == .quote, title: note.book?.title ?? "",
-                             author: note.book?.author ?? "", page: note.page, theme: cardTheme, shape: shape)
+                             author: note.book?.author ?? "", page: note.page, theme: cardTheme, shape: shape,
+                             background: background)
         let renderer = ImageRenderer(content: card)
         renderer.scale = 3
         image = renderer.uiImage
+    }
+}
+
+/// A row of small previews of each background style.
+struct BackgroundPicker: View {
+    @Binding var selection: String
+    let theme: AppTheme
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(CardBackground.allCases) { b in
+                    Button { selection = b.rawValue } label: {
+                        VStack(spacing: 4) {
+                            CardBackdrop(style: b, theme: theme)
+                                .frame(width: 54, height: 72)
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .strokeBorder(selection == b.rawValue ? Color.primary : Color.clear, lineWidth: 2.5))
+                                .environment(\.colorScheme, .dark)
+                            Text(b.rawValue).font(.caption2)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(b.rawValue) background")
+                    .accessibilityIdentifier("bg-\(b.rawValue)")
+                }
+            }
+            .padding(.horizontal, 2)
+        }
     }
 }

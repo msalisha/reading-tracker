@@ -146,6 +146,10 @@ final class FlowUITests: XCTestCase {
         shot(app, "10-quote-card")
         app.buttons["Story"].tap()
         shot(app, "11-quote-card-story")
+        for bg in ["Bookshelf", "Paper", "Open book", "Confetti"] {
+            let b = app.buttons["bg-\(bg)"]
+            if b.exists { b.tap(); shot(app, "11-quote-card-\(bg)") }
+        }
     }
 
     func testRecap() {
