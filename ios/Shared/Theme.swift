@@ -22,7 +22,7 @@ extension Color {
 }
 
 /// A colour scheme. Every screen reads its colours from the current theme, so switching is instant.
-struct AppTheme: Identifiable, Equatable {
+struct AppTheme: Identifiable, Equatable, Sendable {
     let id: String
     let name: String
     /// Main block colour (timer, buttons). Text on it uses `onBrand`.
@@ -108,13 +108,7 @@ struct AppTheme: Identifiable, Equatable {
     static var current: AppTheme { named(AppGroup.defaults.string(forKey: storageKey) ?? "neon") }
 }
 
-private struct ThemeKey: EnvironmentKey {
-    static let defaultValue: AppTheme = .neon
-}
-
 extension EnvironmentValues {
-    var theme: AppTheme {
-        get { self[ThemeKey.self] }
-        set { self[ThemeKey.self] = newValue }
-    }
+    /// The current colour scheme.
+    @Entry var theme: AppTheme = .neon
 }

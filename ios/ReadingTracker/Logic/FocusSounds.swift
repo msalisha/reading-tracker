@@ -31,7 +31,7 @@ enum FocusSound: String, CaseIterable, Identifiable {
 }
 
 /// Volume shared with the audio thread (kept outside the main-thread player on purpose).
-final class AudioLevel {
+final class AudioLevel: @unchecked Sendable { // a float read by the audio thread
     var gain: Float = 0
     var target: Float = 0
 }
@@ -168,20 +168,7 @@ final class FocusSoundPlayer {
 
         let synth = SoundSynth(sampleRate: rate)
         synth.sound = sound
-        let node = AVAudioSourceNode(format: stereo) { _, _, frameCount, buffers -> OSStatus in
-            let list = UnsafeMutableAudioBufferListPointer(buffers)
-            guard list.count >= 2,
-                  let left = list[0].mData?.assumingMemoryBound(to: Float.self),
-                  let right = list[1].mData?.assumingMemoryBound(to: Float.self) else { return noErr }
-            for i in 0..<Int(frameCount) {
-                // glide the volume so starts, stops and changes never click
-                level.gain += (level.target - level.gain) * 0.0005
-                let (l, r) = synth.nextStereo()
-                left[i] = l * level.gain * 0.8
-                right[i] = r * level.gain * 0.8
-            }
-            return noErr
-        }
+        let node = Self.makeSourceNode(format: stereo, synth: synth, level: level)
         engine.attach(node)
         engine.connect(node, to: reverb, format: stereo)
         engine.connect(reverb, to: engine.mainMixerNode, format: stereo)
@@ -194,6 +181,25 @@ final class FocusSoundPlayer {
             isPlaying = true
         } catch {
             isPlaying = false
+        }
+    }
+
+    /// The audio thread's render callback. Built outside the main actor on purpose: it runs on
+    /// iOS's real-time audio thread, never on the main thread.
+    nonisolated private static func makeSourceNode(format: AVAudioFormat, synth: SoundSynth, level: AudioLevel) -> AVAudioSourceNode {
+        AVAudioSourceNode(format: format) { _, _, frameCount, buffers -> OSStatus in
+            let list = UnsafeMutableAudioBufferListPointer(buffers)
+            guard list.count >= 2,
+                  let left = list[0].mData?.assumingMemoryBound(to: Float.self),
+                  let right = list[1].mData?.assumingMemoryBound(to: Float.self) else { return noErr }
+            for i in 0..<Int(frameCount) {
+                // glide the volume so starts, stops and changes never click
+                level.gain += (level.target - level.gain) * 0.0005
+                let (l, r) = synth.nextStereo()
+                left[i] = l * level.gain * 0.8
+                right[i] = r * level.gain * 0.8
+            }
+            return noErr
         }
     }
 

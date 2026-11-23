@@ -184,13 +184,14 @@ enum Backup {
         return nil
     }
 
-    private static let isoFull: ISO8601DateFormatter = {
+    // Formatters are only read after creation, so sharing them between threads is safe.
+    nonisolated(unsafe) private static let isoFull: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return f
     }()
-    private static let isoPlain = ISO8601DateFormatter()
-    private static let localMinute: DateFormatter = {
+    nonisolated(unsafe) private static let isoPlain = ISO8601DateFormatter()
+    nonisolated(unsafe) private static let localMinute: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = .current

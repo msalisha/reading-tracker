@@ -185,17 +185,24 @@ struct PillButton: ButtonStyle {
     @Environment(\.theme) private var theme
     @Environment(\.isEnabled) private var enabled
 
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+    @ViewBuilder func makeBody(configuration: Configuration) -> some View {
+        let label = configuration.label
             .font(big ? .headline : .subheadline.weight(.bold))
             .frame(maxWidth: .infinity)
             .padding(.vertical, big ? 16 : 11)
             .padding(.horizontal, 14)
             .foregroundStyle(fg)
-            .background(bg, in: Capsule())
-            .overlay(Capsule().strokeBorder(kind == .outline ? Color.primary.opacity(0.5) : .clear, lineWidth: 1.5))
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .opacity(enabled ? 1 : 0.45)
+        if kind == .outline {
+            label
+                .glassCapsule(outline: Color.primary.opacity(0.5))
+                .scaleEffect(configuration.isPressed ? 0.97 : 1)
+                .opacity(enabled ? 1 : 0.45)
+        } else {
+            label
+                .background(bg, in: Capsule())
+                .scaleEffect(configuration.isPressed ? 0.97 : 1)
+                .opacity(enabled ? 1 : 0.45)
+        }
     }
 
     private var bg: Color {

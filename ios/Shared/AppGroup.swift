@@ -5,7 +5,7 @@ enum AppGroup {
     static let id: String = (Bundle.main.object(forInfoDictionaryKey: "AppGroup") as? String) ?? "group.com.example.pageturner"
 
     /// Shared settings. Falls back to the app's own defaults when the group isn't available (e.g. unsigned CI builds).
-    static let defaults: UserDefaults = UserDefaults(suiteName: id) ?? .standard
+    nonisolated(unsafe) static let defaults: UserDefaults = UserDefaults(suiteName: id) ?? .standard
 
     static var containerURL: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: id)

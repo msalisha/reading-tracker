@@ -114,7 +114,7 @@ final class BookNote {
 }
 
 enum Persistence {
-    static let schema = Schema([Book.self, ReadingSession.self, BookNote.self])
+    nonisolated(unsafe) static let schema = Schema([Book.self, ReadingSession.self, BookNote.self])
 
     static func makeContainer(inMemory: Bool = false) -> ModelContainer {
         let config: ModelConfiguration

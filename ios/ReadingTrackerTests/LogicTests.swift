@@ -1,46 +1,47 @@
-import XCTest
+import Testing
+import Foundation
 import SwiftData
 import StoreKit
 @testable import ReadingTracker
 
-final class ISBNTests: XCTestCase {
-    func testValidISBN13() {
-        XCTAssertEqual(ISBN.normalize("9781398561960"), "9781398561960")
-        XCTAssertEqual(ISBN.normalize("978-1-398-56196-0"), "9781398561960")
+@Suite struct ISBNTests {
+    @Test func testValidISBN13() {
+        #expect(ISBN.normalize("9781398561960") == "9781398561960")
+        #expect(ISBN.normalize("978-1-398-56196-0") == "9781398561960")
     }
 
-    func testRejectsBadChecksumAndNonBooks() {
-        XCTAssertNil(ISBN.normalize("9781398561961"))
-        XCTAssertNil(ISBN.normalize("5012345678900")) // a grocery barcode
-        XCTAssertNil(ISBN.normalize("hello"))
+    @Test func testRejectsBadChecksumAndNonBooks() {
+        #expect(ISBN.normalize("9781398561961") == nil)
+        #expect(ISBN.normalize("5012345678900") == nil) // a grocery barcode
+        #expect(ISBN.normalize("hello") == nil)
     }
 
-    func testConvertsISBN10() {
-        XCTAssertEqual(ISBN.normalize("0-306-40615-2"), "9780306406157")
-        XCTAssertEqual(ISBN.normalize("080442957X"), "9780804429573")
-        XCTAssertNil(ISBN.normalize("0306406153"))
+    @Test func testConvertsISBN10() {
+        #expect(ISBN.normalize("0-306-40615-2") == "9780306406157")
+        #expect(ISBN.normalize("080442957X") == "9780804429573")
+        #expect(ISBN.normalize("0306406153") == nil)
     }
 }
 
-final class DayTests: XCTestCase {
-    func testKeysRoundTrip() {
+@Suite struct DayTests {
+    @Test func testKeysRoundTrip() {
         for key in ["2026-01-01", "2026-02-28", "2026-03-29", "2026-10-25", "2026-11-23", "2026-12-31", "2028-02-29"] {
-            XCTAssertEqual(Day.key(Day.date(key)), key)
+            #expect(Day.key(Day.date(key)) == key)
         }
-        XCTAssertEqual(Day.monthKey(Day.date("2026-11-23")), "2026-11")
-        XCTAssertEqual(Day.key(Day.date("2026-11")), "2026-11-01")
-        XCTAssertEqual(Day.key(Day.date("2026-10-30T13:40")), "2026-10-30")
-        XCTAssertEqual(Day.date("nonsense"), .distantPast)
+        #expect(Day.monthKey(Day.date("2026-11-23")) == "2026-11")
+        #expect(Day.key(Day.date("2026-11")) == "2026-11-01")
+        #expect(Day.key(Day.date("2026-10-30T13:40")) == "2026-10-30")
+        #expect(Day.date("nonsense") == .distantPast)
     }
 
-    func testWeeksStartOnMonday() {
-        XCTAssertEqual(Day.key(Day.startOfWeek(Day.date("2026-11-23"))), "2026-11-23") // a Monday
-        XCTAssertEqual(Day.key(Day.startOfWeek(Day.date("2026-11-22"))), "2026-11-16") // a Sunday
-        XCTAssertEqual(Day.daysInMonth(Day.date("2026-02-10")), 28)
+    @Test func testWeeksStartOnMonday() {
+        #expect(Day.key(Day.startOfWeek(Day.date("2026-11-23"))) == "2026-11-23") // a Monday
+        #expect(Day.key(Day.startOfWeek(Day.date("2026-11-22"))) == "2026-11-16") // a Sunday
+        #expect(Day.daysInMonth(Day.date("2026-02-10")) == 28)
     }
 }
 
-final class StatsTests: XCTestCase {
+@Suite struct StatsTests {
     private let now = Day.date("2026-11-18").addingTimeInterval(20 * 3600) // Wed 18 Nov 2026, 8pm
 
     private func session(_ book: String, _ day: String, _ from: Int, _ to: Int, minutes: Int? = nil) -> SessionSnap {
@@ -48,23 +49,23 @@ final class StatsTests: XCTestCase {
                     startPage: from, endPage: to, pages: to - from, minutes: minutes)
     }
 
-    func testCurrentPageUsesFurthestPageAndCapsAtTotal() {
+    @Test func testCurrentPageUsesFurthestPageAndCapsAtTotal() {
         let b = BookSnap(id: "a", title: "A", totalPages: 100, startPage: 5)
-        XCTAssertEqual(Stats.currentPage(b, sessions: []), 5)
+        #expect(Stats.currentPage(b, sessions: []) == 5)
         let ss = [session("a", "2026-11-10", 5, 40), session("a", "2026-11-11", 10, 30), session("b", "2026-11-11", 0, 99)]
-        XCTAssertEqual(Stats.currentPage(b, sessions: ss), 40)
-        XCTAssertEqual(Stats.currentPage(b, sessions: [session("a", "2026-11-12", 40, 120)]), 100)
+        #expect(Stats.currentPage(b, sessions: ss) == 40)
+        #expect(Stats.currentPage(b, sessions: [session("a", "2026-11-12", 40, 120)]) == 100)
     }
 
-    func testStreakCountsBackFromTodayOrYesterday() {
+    @Test func testStreakCountsBackFromTodayOrYesterday() {
         let pbd = ["2026-11-18": 10, "2026-11-17": 5, "2026-11-16": 3, "2026-11-14": 9]
-        XCTAssertEqual(Stats.streak(pbd, now: now), 3)
+        #expect(Stats.streak(pbd, now: now) == 3)
         let noneToday = ["2026-11-17": 5, "2026-11-16": 3]
-        XCTAssertEqual(Stats.streak(noneToday, now: now), 2)
-        XCTAssertEqual(Stats.streak(["2026-11-15": 4], now: now), 0)
+        #expect(Stats.streak(noneToday, now: now) == 2)
+        #expect(Stats.streak(["2026-11-15": 4], now: now) == 0)
     }
 
-    func testScoresWeekAndMonth() {
+    @Test func testScoresWeekAndMonth() {
         let ss = [
             session("a", "2026-11-18", 0, 20),  // today (Wed)
             session("a", "2026-11-16", 20, 50), // Mon this week
@@ -77,54 +78,54 @@ final class StatsTests: XCTestCase {
                      BookSnap(id: "b", title: "B", totalPages: 100, status: .finished, finishedDay: "2026-11-02"),
                      BookSnap(id: "c", title: "C", totalPages: 100, status: .dnf, dnfDay: "2026-11-03")]
         let s = Stats.scores(books: books, sessions: ss, now: now)
-        XCTAssertEqual(s.today, 20)
-        XCTAssertEqual(s.week, 50)
-        XCTAssertEqual(s.lastWeekSoFar, 10)
-        XCTAssertEqual(s.month, 70)
-        XCTAssertEqual(s.lastMonthSoFar, 20)
-        XCTAssertEqual(s.finishedThisMonth, 1)
-        XCTAssertEqual(s.dnfThisMonth, 1)
-        XCTAssertEqual(s.streak, 1)
-        XCTAssertEqual(Stats.versus(50, 10, "last week"), "+40 vs last week")
-        XCTAssertEqual(Stats.versus(5, 0, "last week"), "nothing last week by now")
+        #expect(s.today == 20)
+        #expect(s.week == 50)
+        #expect(s.lastWeekSoFar == 10)
+        #expect(s.month == 70)
+        #expect(s.lastMonthSoFar == 20)
+        #expect(s.finishedThisMonth == 1)
+        #expect(s.dnfThisMonth == 1)
+        #expect(s.streak == 1)
+        #expect(Stats.versus(50, 10, "last week") == "+40 vs last week")
+        #expect(Stats.versus(5, 0, "last week") == "nothing last week by now")
     }
 
-    func testPaceFromLastFourteenDays() {
+    @Test func testPaceFromLastFourteenDays() {
         let b = BookSnap(id: "a", title: "A", totalPages: 300)
         let p = Stats.pace(b, sessions: [session("a", "2026-11-10", 0, 70), session("a", "2026-10-01", 70, 100)], now: now)
-        XCTAssertEqual(p.current, 100)
-        XCTAssertEqual(p.left, 200)
-        XCTAssertEqual(p.etaDays, 40) // 70 pages / 14 days = 5 a day
+        #expect(p.current == 100)
+        #expect(p.left == 200)
+        #expect(p.etaDays == 40) // 70 pages / 14 days = 5 a day
     }
 
-    func testAverageDayOnlyCountsDaysYouRead() {
+    @Test func testAverageDayOnlyCountsDaysYouRead() {
         let ss = [session("a", "2026-11-18", 0, 20, minutes: 30), session("a", "2026-11-17", 20, 60, minutes: 50),
                   session("a", "2026-11-16", 60, 90)]
         let avg = Stats.averageDay(sessions: ss, days: 7, now: now)
-        XCTAssertEqual(avg.readDays, 3)
-        XCTAssertEqual(avg.avgPages, 30, accuracy: 0.01)
-        XCTAssertEqual(avg.timedDays, 2)
-        XCTAssertEqual(avg.avgMinutes, 40, accuracy: 0.01)
-        XCTAssertEqual(avg.pagesPerHour ?? 0, 45, accuracy: 0.01) // 60 pages in 80 minutes
-        XCTAssertEqual(avg.series.count, 7)
+        #expect(avg.readDays == 3)
+        #expect(abs((avg.avgPages) - (30)) <= 0.01)
+        #expect(avg.timedDays == 2)
+        #expect(abs((avg.avgMinutes) - (40)) <= 0.01)
+        #expect(abs((avg.pagesPerHour ?? 0) - (45)) <= 0.01) // 60 pages in 80 minutes
+        #expect(avg.series.count == 7)
     }
 
-    func testPageBarsAndBookBars() {
+    @Test func testPageBarsAndBookBars() {
         let ss = [session("a", "2026-11-18", 0, 20), session("a", "2026-11-05", 20, 40)]
         let days = Stats.pageBars(.day, sessions: ss, now: now)
-        XCTAssertEqual(days.count, 14)
-        XCTAssertEqual(days.last?.value, 20)
-        XCTAssertTrue(days.last?.isCurrent ?? false)
-        XCTAssertEqual(days.first?.value, 20) // 5 Nov is 13 days before
+        #expect(days.count == 14)
+        #expect(days.last?.value == 20)
+        #expect(days.last?.isCurrent ?? false)
+        #expect(days.first?.value == 20) // 5 Nov is 13 days before
         let months = Stats.pageBars(.month, sessions: ss, now: now)
-        XCTAssertEqual(months.count, 12)
-        XCTAssertEqual(months.last?.value, 40)
+        #expect(months.count == 12)
+        #expect(months.last?.value == 40)
         let books = [BookSnap(id: "b", title: "B", totalPages: 100, status: .finished, finishedDay: "2026-11-02")]
-        XCTAssertEqual(Stats.bookBars(books: books, now: now).last?.value, 1)
+        #expect(Stats.bookBars(books: books, now: now).last?.value == 1)
     }
 }
 
-final class RecapTests: XCTestCase {
+@Suite struct RecapTests {
     private let now = Day.date("2026-11-20").addingTimeInterval(20 * 3600)
 
     private func s(_ book: String, _ day: String, _ from: Int, _ to: Int, _ minutes: Int? = nil) -> SessionSnap {
@@ -132,7 +133,7 @@ final class RecapTests: XCTestCase {
                     startPage: from, endPage: to, pages: to - from, minutes: minutes)
     }
 
-    func testMonthlyRecap() {
+    @Test func testMonthlyRecap() {
         let books = [
             BookSnap(id: "a", title: "Alpha", totalPages: 200, status: .finished, finishedDay: "2026-11-12", rating: 4),
             BookSnap(id: "b", title: "Beta", totalPages: 500, status: .finished, finishedDay: "2026-11-18", rating: 4.5),
@@ -148,43 +149,43 @@ final class RecapTests: XCTestCase {
                      Recap.NoteInput(text: "New quote", isQuote: true, day: "2026-11-15", bookTitle: "Alpha", author: "A"),
                      Recap.NoteInput(text: "A thought", isQuote: false, day: "2026-11-19", bookTitle: "Beta", author: "")]
         let r = Recap.make(.thisMonth(now), books: books, sessions: sessions, notes: notes, now: now)
-        XCTAssertEqual(r.period.title, "November 2026")
-        XCTAssertEqual(r.finished.map(\.title), ["Alpha", "Beta"])
-        XCTAssertEqual(r.writtenOff, 1)
-        XCTAssertEqual(r.pages, 700)
-        XCTAssertEqual(r.minutes, 210)
-        XCTAssertEqual(r.sessions, 5)
-        XCTAssertEqual(r.readingDays, 5)
-        XCTAssertEqual(r.daysElapsed, 20)
-        XCTAssertEqual(r.longestStreak, 3)
-        XCTAssertEqual(r.bestDay?.day, "2026-11-17")
-        XCTAssertEqual(r.bestDay?.pages, 300)
-        XCTAssertEqual(r.topBook?.title, "Beta")
-        XCTAssertEqual(r.longestBook?.title, "Beta")
-        XCTAssertEqual(r.fastest?.book.title, "Beta")
-        XCTAssertEqual(r.fastest?.days, 2)
-        XCTAssertEqual(r.averageRating ?? 0, 4.25, accuracy: 0.001)
-        XCTAssertEqual(r.quote?.text, "New quote")
-        XCTAssertEqual(r.favouriteWeekday, "Tuesday") // 17 Nov 2026, 300 pages
-        XCTAssertFalse(r.isEmpty)
+        #expect(r.period.title == "November 2026")
+        #expect(r.finished.map(\.title) == ["Alpha", "Beta"])
+        #expect(r.writtenOff == 1)
+        #expect(r.pages == 700)
+        #expect(r.minutes == 210)
+        #expect(r.sessions == 5)
+        #expect(r.readingDays == 5)
+        #expect(r.daysElapsed == 20)
+        #expect(r.longestStreak == 3)
+        #expect(r.bestDay?.day == "2026-11-17")
+        #expect(r.bestDay?.pages == 300)
+        #expect(r.topBook?.title == "Beta")
+        #expect(r.longestBook?.title == "Beta")
+        #expect(r.fastest?.book.title == "Beta")
+        #expect(r.fastest?.days == 2)
+        #expect(abs((r.averageRating ?? 0) - (4.25)) <= 0.001)
+        #expect(r.quote?.text == "New quote")
+        #expect(r.favouriteWeekday == "Tuesday") // 17 Nov 2026, 300 pages
+        #expect(!(r.isEmpty))
     }
 
-    func testYearAndEmptyPeriods() {
+    @Test func testYearAndEmptyPeriods() {
         let books = [BookSnap(id: "c", title: "Gamma", totalPages: 300, status: .finished, finishedDay: "2026-10-02")]
         let sessions = [s("c", "2026-10-01", 0, 300)]
         let year = Recap.make(.thisYear(now), books: books, sessions: sessions, notes: [], now: now)
-        XCTAssertEqual(year.period.title, "2026")
-        XCTAssertEqual(year.finished.count, 1)
-        XCTAssertEqual(year.pages, 300)
-        XCTAssertEqual(year.daysElapsed, Day.daysBetween(Day.date("2026-01-01"), now) + 1)
+        #expect(year.period.title == "2026")
+        #expect(year.finished.count == 1)
+        #expect(year.pages == 300)
+        #expect(year.daysElapsed == Day.daysBetween(Day.date("2026-01-01"), now) + 1)
         let last = Recap.make(.lastYear(now), books: books, sessions: sessions, notes: [], now: now)
-        XCTAssertTrue(last.isEmpty)
-        XCTAssertEqual(Recap.Period.lastMonth(now).title, "October 2026")
-        XCTAssertEqual(RecapSlide.slides(for: last), [.intro, .summary])
+        #expect(last.isEmpty)
+        #expect(Recap.Period.lastMonth(now).title == "October 2026")
+        #expect(RecapSlide.slides(for: last) == [.intro, .summary])
     }
 }
 
-final class SoundTests: XCTestCase {
+@Suite struct SoundTests {
     private func stats(_ sound: FocusSound, seconds: Double = 2) -> (rms: Float, peak: Float, finite: Bool) {
         let synth = SoundSynth(sampleRate: 44_100)
         synth.sound = sound
@@ -199,156 +200,157 @@ final class SoundTests: XCTestCase {
         return ((sum / Float(n)).squareRoot(), peak, finite)
     }
 
-    func testEachSoundIsAudibleAndSafe() {
+    @Test func testEachSoundIsAudibleAndSafe() {
         for sound in [FocusSound.rain, .cafe, .fireplace, .beach] {
             let s = stats(sound)
-            XCTAssertTrue(s.finite, "\(sound) produced an invalid sample")
-            XCTAssertLessThanOrEqual(s.peak, 1, "\(sound) clips")
-            XCTAssertGreaterThan(s.rms, 0.01, "\(sound) is too quiet")
-            XCTAssertLessThan(s.rms, 0.5, "\(sound) is too loud")
+            #expect(s.finite, "\(sound) produced an invalid sample")
+            #expect(s.peak <= 1, "\(sound) clips")
+            #expect(s.rms > 0.01, "\(sound) is too quiet")
+            #expect(s.rms < 0.5, "\(sound) is too loud")
         }
-        XCTAssertEqual(stats(.off, seconds: 0.2).rms, 0)
+        #expect(stats(.off, seconds: 0.2).rms == 0)
     }
 
-    func testSoundsAreStereo() {
+    @Test func testSoundsAreStereo() {
         for sound in [FocusSound.rain, .cafe, .fireplace, .beach] {
             let synth = SoundSynth(sampleRate: 44_100)
             synth.sound = sound
             var diff: Float = 0
             for _ in 0..<44_100 { let (l, r) = synth.nextStereo(); diff += abs(l - r) }
-            XCTAssertGreaterThan(diff / 44_100, 0.001, "\(sound) should differ between left and right")
+            #expect(diff / 44_100 > 0.001, "\(sound) should differ between left and right")
         }
     }
 
-    func testSoundsAreFastEnoughForRealTime() {
+    @Test func testSoundsAreFastEnoughForRealTime() {
         // one second of the busiest sound must take well under a second to make
         let synth = SoundSynth(sampleRate: 48_000)
         synth.sound = .cafe
         let start = Date()
         for _ in 0..<48_000 { _ = synth.nextStereo() }
-        XCTAssertLessThan(Date().timeIntervalSince(start), 0.5)
+        #expect(Date().timeIntervalSince(start) < 0.5)
     }
 }
 
-final class TimerTests: XCTestCase {
-    func testPauseResumeKeepsTime() {
+@Suite struct TimerTests {
+    @Test func testPauseResumeKeepsTime() {
         let t0 = Date(timeIntervalSince1970: 1_000_000)
         var t = ActiveTimer(bookID: "a", bookTitle: "A", startPage: 10, startedAt: t0, accumulated: 0, runningSince: t0, status: .running)
-        XCTAssertEqual(t.elapsed(at: t0.addingTimeInterval(600)), 600, accuracy: 0.001)
+        #expect(abs((t.elapsed(at: t0.addingTimeInterval(600))) - (600)) <= 0.001)
         t.pause(at: t0.addingTimeInterval(600))
-        XCTAssertEqual(t.elapsed(at: t0.addingTimeInterval(5000)), 600, accuracy: 0.001)
+        #expect(abs((t.elapsed(at: t0.addingTimeInterval(5000))) - (600)) <= 0.001)
         t.resume(at: t0.addingTimeInterval(5000))
         t.stop(at: t0.addingTimeInterval(5300))
-        XCTAssertEqual(t.elapsed(at: t0.addingTimeInterval(9999)), 900, accuracy: 0.001)
-        XCTAssertEqual(t.minutes(at: t0.addingTimeInterval(9999)), 15)
-        XCTAssertEqual(ActiveTimer.clock(3725), "1:02:05")
-        XCTAssertEqual(ActiveTimer.clock(65), "1:05")
+        #expect(abs((t.elapsed(at: t0.addingTimeInterval(9999))) - (900)) <= 0.001)
+        #expect(t.minutes(at: t0.addingTimeInterval(9999)) == 15)
+        #expect(ActiveTimer.clock(3725) == "1:02:05")
+        #expect(ActiveTimer.clock(65) == "1:05")
     }
 }
 
-final class AccessTests: XCTestCase {
+@Suite struct AccessTests {
     private let start = Date(timeIntervalSince1970: 2_000_000_000)
 
-    func testTrialLifecycle() {
-        XCTAssertEqual(AccessRules.access(trialStart: nil, unlocked: false, now: start), .noTrial)
-        XCTAssertEqual(AccessRules.access(trialStart: start, unlocked: false, now: start),
-                       .trial(endsAt: start.addingTimeInterval(AccessRules.trialLength)))
-        XCTAssertEqual(AccessRules.access(trialStart: start, unlocked: false, now: start.addingTimeInterval(2 * 86_400)),
-                       .trial(endsAt: start.addingTimeInterval(AccessRules.trialLength)))
-        XCTAssertEqual(AccessRules.access(trialStart: start, unlocked: false, now: start.addingTimeInterval(3 * 86_400)), .expired)
-        XCTAssertEqual(AccessRules.access(trialStart: start, unlocked: true, now: start.addingTimeInterval(30 * 86_400)), .unlocked)
-        XCTAssertEqual(AccessRules.access(trialStart: nil, unlocked: true, now: start), .unlocked)
+    @Test func testTrialLifecycle() {
+        #expect(AccessRules.access(trialStart: nil, unlocked: false, now: start) == .noTrial)
+        #expect(AccessRules.access(trialStart: start, unlocked: false, now: start) == .trial(endsAt: start.addingTimeInterval(AccessRules.trialLength)))
+        #expect(AccessRules.access(trialStart: start, unlocked: false, now: start.addingTimeInterval(2 * 86_400)) == .trial(endsAt: start.addingTimeInterval(AccessRules.trialLength)))
+        #expect(AccessRules.access(trialStart: start, unlocked: false, now: start.addingTimeInterval(3 * 86_400)) == .expired)
+        #expect(AccessRules.access(trialStart: start, unlocked: true, now: start.addingTimeInterval(30 * 86_400)) == .unlocked)
+        #expect(AccessRules.access(trialStart: nil, unlocked: true, now: start) == .unlocked)
     }
 
-    func testWhoCanEdit() {
-        XCTAssertTrue(Access.unlocked.canEdit)
-        XCTAssertTrue(Access.trial(endsAt: start).canEdit)
-        XCTAssertFalse(Access.expired.canEdit)
-        XCTAssertFalse(Access.noTrial.canEdit)
+    @Test func testWhoCanEdit() {
+        #expect(Access.unlocked.canEdit)
+        #expect(Access.trial(endsAt: start).canEdit)
+        #expect(!(Access.expired.canEdit))
+        #expect(!(Access.noTrial.canEdit))
     }
 
-    func testPurchaseErrorsAreExplained() {
-        XCTAssertEqual(StoreErrors.message(for: Product.PurchaseError.purchaseNotAllowed), StoreErrors.notAllowed)
-        XCTAssertTrue(StoreErrors.message(for: Product.PurchaseError.purchaseNotAllowed).contains("Screen Time"))
-        XCTAssertEqual(StoreErrors.message(for: Product.PurchaseError.productUnavailable), StoreErrors.unavailable)
-        XCTAssertEqual(StoreErrors.message(for: StoreKitError.networkError(URLError(.notConnectedToInternet))), StoreErrors.network)
-        XCTAssertEqual(StoreErrors.message(for: StoreKitError.userCancelled), "")
+    @Test func testPurchaseErrorsAreExplained() {
+        #expect(StoreErrors.message(for: Product.PurchaseError.purchaseNotAllowed) == StoreErrors.notAllowed)
+        #expect(StoreErrors.message(for: Product.PurchaseError.purchaseNotAllowed).contains("Screen Time"))
+        #expect(StoreErrors.message(for: Product.PurchaseError.productUnavailable) == StoreErrors.unavailable)
+        #expect(StoreErrors.message(for: StoreKitError.networkError(URLError(.notConnectedToInternet))) == StoreErrors.network)
+        #expect(StoreErrors.message(for: StoreKitError.userCancelled) == "")
         let other = NSError(domain: "Test", code: 7, userInfo: [NSLocalizedDescriptionKey: "Something odd"])
-        XCTAssertTrue(StoreErrors.message(for: other).contains("Something odd"))
-        XCTAssertTrue(StoreErrors.message(for: other).contains("haven't been charged"))
+        #expect(StoreErrors.message(for: other).contains("Something odd"))
+        #expect(StoreErrors.message(for: other).contains("haven't been charged"))
     }
 
-    func testTimeLeftWording() {
-        XCTAssertEqual(AccessRules.timeLeft(until: start.addingTimeInterval(2.5 * 86_400), now: start), "3 days left")
-        XCTAssertEqual(AccessRules.timeLeft(until: start.addingTimeInterval(5 * 3600), now: start), "5 hours left")
-        XCTAssertEqual(AccessRules.timeLeft(until: start.addingTimeInterval(1800), now: start), "1 hour left")
+    @Test func testTimeLeftWording() {
+        #expect(AccessRules.timeLeft(until: start.addingTimeInterval(2.5 * 86_400), now: start) == "3 days left")
+        #expect(AccessRules.timeLeft(until: start.addingTimeInterval(5 * 3600), now: start) == "5 hours left")
+        #expect(AccessRules.timeLeft(until: start.addingTimeInterval(1800), now: start) == "1 hour left")
     }
 }
 
 @MainActor
-final class BackupTests: XCTestCase {
+@Suite struct BackupTests {
     private func fixture() throws -> Data {
-        let url = try XCTUnwrap(Bundle(for: BackupTests.self).url(forResource: "web-backup", withExtension: "json"))
+        let url = try #require(Bundle(for: BundleToken.self).url(forResource: "web-backup", withExtension: "json"))
         return try Data(contentsOf: url)
     }
 
-    func testParsesTheWebAppBackup() throws {
+    @Test func testParsesTheWebAppBackup() throws {
         let c = try Backup.parse(fixture())
-        XCTAssertEqual(c.books.count, 4)
-        XCTAssertEqual(c.sessions.count, 40)
-        XCTAssertEqual(c.totalPages, 427)
-        let hunger = try XCTUnwrap(c.books.first { $0.title == "The hunger code" })
-        XCTAssertEqual(hunger.status, .finished)
-        XCTAssertEqual(hunger.finishedDay, "2026-11-13")
-        XCTAssertEqual(hunger.startPage, 3)
+        #expect(c.books.count == 4)
+        #expect(c.sessions.count == 40)
+        #expect(c.totalPages == 427)
+        let hunger = try #require(c.books.first { $0.title == "The hunger code" })
+        #expect(hunger.status == .finished)
+        #expect(hunger.finishedDay == "2026-11-13")
+        #expect(hunger.startPage == 3)
     }
 
-    func testRestoreThenExportRoundTrips() throws {
+    @Test func testRestoreThenExportRoundTrips() throws {
         let container = Persistence.makeContainer(inMemory: true)
         let ctx = container.mainContext
         Backup.restore(try Backup.parse(fixture()), into: ctx)
         let books = try ctx.fetch(FetchDescriptor<Book>())
-        XCTAssertEqual(books.count, 4)
-        XCTAssertEqual(try ctx.fetch(FetchDescriptor<ReadingSession>()).count, 40)
-        let apple = try XCTUnwrap(books.first { $0.title.hasPrefix("Apple") })
-        XCTAssertEqual(apple.currentPage, 51)
+        #expect(books.count == 4)
+        #expect(try ctx.fetch(FetchDescriptor<ReadingSession>()).count == 40)
+        let apple = try #require(books.first { $0.title.hasPrefix("Apple") })
+        #expect(apple.currentPage == 51)
 
         apple.rating = 4.5
         ctx.insert(BookNote(book: apple, kind: .quote, text: "Think different.", page: 12))
         try ctx.save()
 
         let again = try Backup.parse(Backup.export(ctx))
-        XCTAssertEqual(again.books.count, 4)
-        XCTAssertEqual(again.sessions.count, 40)
-        XCTAssertEqual(again.totalPages, 427)
-        XCTAssertEqual(again.notes.first?.text, "Think different.")
-        XCTAssertEqual(again.books.first { $0.title.hasPrefix("Apple") }?.rating, 4.5)
+        #expect(again.books.count == 4)
+        #expect(again.sessions.count == 40)
+        #expect(again.totalPages == 427)
+        #expect(again.notes.first?.text == "Think different.")
+        #expect(again.books.first { $0.title.hasPrefix("Apple") }?.rating == 4.5)
 
         // Importing the same backup twice doesn't duplicate anything, and the stats still work afterwards.
         Backup.restore(again, into: ctx)
         Backup.restore(try Backup.parse(fixture()), into: ctx)
         let allBooks = try ctx.fetch(FetchDescriptor<Book>())
         let allSessions = try ctx.fetch(FetchDescriptor<ReadingSession>())
-        XCTAssertEqual(allBooks.count, 4)
-        XCTAssertEqual(allSessions.count, 40)
+        #expect(allBooks.count == 4)
+        #expect(allSessions.count == 40)
         let scores = Stats.scores(books: allBooks.map(\.snap), sessions: allSessions.map(\.snap), now: Day.date("2026-11-15"))
-        XCTAssertEqual(scores.finishedThisMonth, 1)
-        XCTAssertGreaterThan(scores.month, 0)
-        XCTAssertTrue(Backup.csv(ctx).hasPrefix("Book,Author,Status"))
+        #expect(scores.finishedThisMonth == 1)
+        #expect(scores.month > 0)
+        #expect(Backup.csv(ctx).hasPrefix("Book,Author,Status"))
     }
 
-    func testLoggingFinishesTheBook() throws {
+    @Test func testLoggingFinishesTheBook() throws {
         let container = Persistence.makeContainer(inMemory: true) // keep the store alive for the whole test
         let ctx = container.mainContext
         let b = Book(title: "Short", totalPages: 50)
         ctx.insert(b)
-        XCTAssertFalse(Library.logSession(ctx, book: b, startedAt: .now, from: 0, to: 30, minutes: 20))
-        XCTAssertEqual(b.status, .reading)
-        XCTAssertTrue(Library.logSession(ctx, book: b, startedAt: .now, from: 30, to: 50, minutes: nil))
-        XCTAssertEqual(b.status, .finished)
-        XCTAssertEqual(b.finishedDay, Day.key(.now))
-        XCTAssertEqual(Library.problem(from: 30, to: 30, totalPages: 50), "You started on page 30, so the finishing page needs to be higher.")
-        XCTAssertNil(Library.problem(from: 0, to: 50, totalPages: 50))
+        #expect(!(Library.logSession(ctx, book: b, startedAt: .now, from: 0, to: 30, minutes: 20)))
+        #expect(b.status == .reading)
+        #expect(Library.logSession(ctx, book: b, startedAt: .now, from: 30, to: 50, minutes: nil))
+        #expect(b.status == .finished)
+        #expect(b.finishedDay == Day.key(.now))
+        #expect(Library.problem(from: 30, to: 30, totalPages: 50) == "You started on page 30, so the finishing page needs to be higher.")
+        #expect(Library.problem(from: 0, to: 50, totalPages: 50) == nil)
         withExtendedLifetime(container) {}
     }
 }
+
+/// Finds this test bundle (Swift Testing suites are structs, so they can't be used with Bundle(for:)).
+private final class BundleToken {}

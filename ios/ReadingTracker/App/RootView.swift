@@ -33,6 +33,7 @@ struct RootView: View {
                 .tabItem { Label("Settings", systemImage: "gearshape") }
                 .tag(Router.Tab.settings)
         }
+        .modernTabBar()
         .tint(theme.brandText)
         .environment(\.theme, theme)
         .preferredColorScheme(appearance == "light" ? .light : appearance == "dark" ? .dark : nil)

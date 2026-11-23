@@ -54,8 +54,8 @@ enum LiveActivityController {
 
 /// Lock-screen Pause button. LiveActivityIntent runs in the app's process.
 struct PauseReadingIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "Pause reading timer"
-    static var isDiscoverable = false
+    static let title: LocalizedStringResource = "Pause reading timer"
+    static let isDiscoverable = false
 
     init() {}
 
@@ -73,8 +73,8 @@ struct PauseReadingIntent: LiveActivityIntent {
 
 /// Lock-screen Resume button.
 struct ResumeReadingIntent: LiveActivityIntent {
-    static var title: LocalizedStringResource = "Resume reading timer"
-    static var isDiscoverable = false
+    static let title: LocalizedStringResource = "Resume reading timer"
+    static let isDiscoverable = false
 
     init() {}
 

@@ -93,6 +93,19 @@ CI saves screenshots of the sample library on every run (Actions → the run →
   >
   > Try everything free for 3 days, then unlock it forever with one payment. No subscription.
 
+## Tech stack
+
+- **Swift 6** with complete data-race checking. The compiler proves there are no threading bugs.
+- **SwiftUI** (iOS 17+), with iOS 26 **Liquid Glass** on newer phones: the tab bar shrinks while you scroll, plus glass buttons and controls.
+- **SwiftData** for storage; **Swift Charts**; **StoreKit 2** for the trial and purchase.
+- **VisionKit** for barcode and quote scanning; **PhotosUI** and the camera for covers.
+- **WidgetKit**, **ActivityKit** (Live Activities) and **App Intents** for widgets and the lock-screen timer.
+- **AVAudioEngine** for the generated stereo Focus sounds.
+- **Swift Testing** for the logic tests; XCTest UI tests.
+- CI builds with the newest Xcode on GitHub's Mac runners.
+
+The minimum is iOS 17, so iPhones from 2018 (XS/XR) onwards can buy it. Phones on iOS 26 get the new design automatically.
+
 ## Project layout
 
 ```

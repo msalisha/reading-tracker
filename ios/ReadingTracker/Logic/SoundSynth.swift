@@ -484,7 +484,7 @@ final class BeachSound {
 // MARK: - The mixer the player uses
 
 /// Generates the chosen sound, one stereo sample at a time, gently limited so it never distorts.
-final class SoundSynth {
+final class SoundSynth: @unchecked Sendable { // used only by the audio thread once playing
     var sound: FocusSound = .off
     private let rain: RainSound, fire: FireSound, cafe: CafeSound, beach: BeachSound
 

@@ -57,7 +57,7 @@ struct PaywallView: View {
             .padding(24)
         }
         .overlay(alignment: .topTrailing) {
-            Button { dismiss() } label: { Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.secondary) }
+            Button { dismiss() } label: { Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.secondary).glassCircle() }
                 .padding(16)
                 .accessibilityLabel("Close")
         }
