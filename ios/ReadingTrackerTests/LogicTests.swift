@@ -37,7 +37,7 @@ import StoreKit
 
     @Test func decodesPicturesFromThePage() async {
         // a 2×2 red PNG
-        let png = "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4z8DAwMDAxMDAAAAoBgH/uMqbbwAAAABJRU5ErkJggg=="
+        let png = "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP4z8AARAwQCgAf7gP9i18U1AAAAABJRU5ErkJggg=="
         #expect(await GoogleCovers.imageData(fromSource: "data:image/png;base64," + png) != nil)
         #expect(await GoogleCovers.imageData(fromSource: "data:image/png;base64,not-a-picture") == nil)
         #expect(await GoogleCovers.imageData(fromSource: "javascript:alert(1)") == nil)

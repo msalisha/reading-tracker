@@ -189,9 +189,13 @@ final class FlowUITests: XCTestCase {
     func testCoverSearchOpensGoogle() {
         let app = launch(["-uitest-sample"])
         tab(app, "Books")
-        element(app, "Frankenstein").tap()
-        let cover = app.buttons["coverButton"]
-        XCTAssertTrue(cover.waitForExistence(timeout: 5))
+        element(app, "Pride and Prejudice").tap()
+        XCTAssertTrue(app.buttons["addThought"].waitForExistence(timeout: 5), "the book page should open")
+        let cover = app.descendants(matching: .any)["coverButton"].firstMatch
+        if !cover.waitForExistence(timeout: 5) {
+            XCTFail("cover button missing. Screen:\n\(app.debugDescription)")
+            return
+        }
         cover.tap()
         let google = app.buttons["Search Google Images"]
         XCTAssertTrue(google.waitForExistence(timeout: 5), "the cover menu should offer Google Images")
