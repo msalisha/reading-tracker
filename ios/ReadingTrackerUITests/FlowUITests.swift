@@ -155,7 +155,7 @@ final class FlowUITests: XCTestCase {
         share.tap()
         XCTAssertTrue(app.buttons["cardShare"].waitForExistence(timeout: 5))
         if app.buttons["Story"].exists { app.buttons["Story"].tap() }
-        if app.buttons["bg-Bookshelf"].exists { app.buttons["bg-Bookshelf"].tap() }
+        if app.buttons["style-Collage"].exists { app.buttons["style-Collage"].tap() }
         shot(app, "AppStore/4-quote-card")
         // 5. Stats, from a fresh start
         app.terminate()
@@ -203,10 +203,15 @@ final class FlowUITests: XCTestCase {
         shot(app, "10-quote-card")
         app.buttons["Story"].tap()
         shot(app, "11-quote-card-story")
-        for bg in ["Bookshelf", "Paper", "Open book", "Confetti"] {
-            let b = app.buttons["bg-\(bg)"]
-            if b.exists { b.tap(); shot(app, "11-quote-card-\(bg)") }
+        for style in ["Collage", "Dreamy", "Highlighter", "Editorial", "Bookmark"] {
+            let b = app.buttons["style-\(style)"]
+            if !b.isHittable { app.scrollViews.containing(.button, identifier: "style-Poster").firstMatch.swipeLeft() }
+            XCTAssertTrue(b.waitForExistence(timeout: 3), "missing style \(style)")
+            b.tap()
+            shot(app, "11-quote-card-\(style)")
         }
+        app.buttons["Square"].tap()
+        shot(app, "11-quote-card-square")
     }
 
     func testRecap() {

@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import SwiftUI
 import SwiftData
 import StoreKit
 import AVFoundation
@@ -467,6 +468,32 @@ import AVFoundation
         let s = ReadingSession(book: nil, startedAt: .now, startPage: 0, endPage: 1, minutes: nil)
         #expect(!s.copyID.isEmpty)
         #expect(!BookNote(book: nil, kind: .thought, text: "hi").copyID.isEmpty)
+    }
+}
+
+@MainActor
+@Suite struct CardTests {
+    /// Renders every card style and shape, and saves the pictures next to the screenshots when a folder is given.
+    @Test func everyStyleRenders() throws {
+        let long = "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families."
+        let short = "I declare after all there is no enjoyment like reading!"
+        let dir = ProcessInfo.processInfo.environment["SCREENSHOT_DIR"].map { URL(fileURLWithPath: $0).appendingPathComponent("Cards") }
+        if let dir { try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true) }
+        let themes = AppTheme.all
+        for (i, style) in CardStyle.allCases.enumerated() {
+            for shape in QuoteCard.Shape.allCases {
+                let theme = shape == .portrait ? AppTheme.neon : themes[(i + (shape == .square ? 1 : 3)) % themes.count]
+                let card = QuoteCard(text: shape == .square ? long : short, isQuote: true, title: "Pride and Prejudice",
+                                     author: "Jane Austen", page: 54, theme: theme, shape: shape, style: style)
+                let renderer = ImageRenderer(content: card)
+                renderer.scale = 2
+                let image = try #require(renderer.uiImage)
+                #expect(image.size.width == shape.size.width)
+                if let dir, let data = image.jpegData(compressionQuality: 0.8) {
+                    try? data.write(to: dir.appendingPathComponent("\(style.rawValue)-\(shape.rawValue).jpg"))
+                }
+            }
+        }
     }
 }
 
