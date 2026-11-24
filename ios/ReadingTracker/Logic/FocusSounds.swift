@@ -146,7 +146,8 @@ final class FocusSoundPlayer {
         if let url = recording(for: sound), let file = try? AVAudioFile(forReading: url),
            let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)),
            (try? file.read(into: buffer)) != nil {
-            // a real recording, looped
+            // a real recording, trimmed to its exact loop and given a clean start, then looped
+            RecordingLoop.prepare(buffer, loopFrames: RecordingLoop.loopFrames(for: sound))
             let player = AVAudioPlayerNode()
             let mixer = AVAudioMixerNode()
             engine.attach(player)
@@ -235,5 +236,35 @@ final class FocusSoundPlayer {
             self.recordingMixer = nil
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
+    }
+}
+
+/// Makes a bundled recording loop without a seam. Each file (see Sounds/loops.json) holds the loop plus a copy of
+/// its first 8192 frames after the loop point, because compressed audio blurs the very start and end of a file.
+/// We play only the loop itself, and take its first moments from that clean copy instead.
+enum RecordingLoop {
+    static let headFrames = 4096
+    static let blendFrames = 256
+
+    static func loopFrames(for sound: FocusSound) -> Int? {
+        guard let url = Bundle.main.url(forResource: "loops", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let frames = json["loopFrames"] as? [String: Int] else { return nil }
+        return frames[sound.rawValue]
+    }
+
+    static func prepare(_ buffer: AVAudioPCMBuffer, loopFrames: Int?) {
+        guard let n = loopFrames, n > headFrames, Int(buffer.frameLength) >= n + headFrames,
+              let channels = buffer.floatChannelData else { return }
+        for c in 0..<Int(buffer.format.channelCount) {
+            let x = channels[c]
+            for i in 0..<headFrames {
+                // clean copy for the first moments, blending back into the original just before 4096 frames
+                let w: Float = i < headFrames - blendFrames ? 1 : Float(headFrames - i) / Float(blendFrames)
+                x[i] = w * x[n + i] + (1 - w) * x[i]
+            }
+        }
+        buffer.frameLength = AVAudioFrameCount(n)
     }
 }

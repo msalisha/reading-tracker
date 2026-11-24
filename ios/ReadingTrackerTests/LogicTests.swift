@@ -2,6 +2,7 @@ import Testing
 import Foundation
 import SwiftData
 import StoreKit
+import AVFoundation
 @testable import ReadingTracker
 
 @Suite struct ISBNTests {
@@ -252,6 +253,30 @@ import StoreKit
             for _ in 0..<44_100 { let (l, r) = synth.nextStereo(); diff += abs(l - r) }
             #expect(diff / 44_100 > 0.001, "\(sound) should differ between left and right")
         }
+    }
+
+    @Test func recordingsAreBundled() {
+        for name in ["rain", "fireplace", "cafe", "beach"] {
+            #expect(Bundle.main.url(forResource: name, withExtension: "m4a") != nil, "missing \(name).m4a")
+            #expect((RecordingLoop.loopFrames(for: FocusSound(rawValue: name)!) ?? 0) > 44_100 * 30)
+        }
+    }
+
+    @Test func recordingLoopTrimsAndCleansTheStart() throws {
+        let n = 10_000, extra = 8192
+        let format = try #require(AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2))
+        let buffer = try #require(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(n + extra)))
+        buffer.frameLength = AVAudioFrameCount(n + extra)
+        for c in 0..<2 {
+            let x = buffer.floatChannelData![c]
+            for i in 0..<(n + extra) { x[i] = Float(i % n) / Float(n) }   // a ramp that repeats every n frames
+            for i in 0..<64 { x[i] = 0.9 }                                 // a smeared start, like a codec's
+        }
+        RecordingLoop.prepare(buffer, loopFrames: n)
+        #expect(buffer.frameLength == AVAudioFrameCount(n))
+        let x = buffer.floatChannelData![0]
+        #expect(abs(x[0] - 0) < 0.001)           // the smear is gone
+        #expect(abs(x[100] - 0.01) < 0.001)
     }
 
     @Test func testSoundsAreFastEnoughForRealTime() {
