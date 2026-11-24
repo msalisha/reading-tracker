@@ -136,7 +136,9 @@ for it in range(a.iterations):
         order = np.argsort(E, axis=0)
         for k in range(E.shape[1]):
             E[order[:, k], k] = target_sorted[:, k]
-    gain = (np.maximum(E, 1e-9) / np.maximum(E0, 1e-9)) ** (1 / COMP)
+    floor = 0.02 * mean_r                                  # never divide by a near-silent moment
+    gain = (np.maximum(E, floor) / np.maximum(E0, floor)) ** (1 / COMP)
+    gain = np.clip(gain, 0.05, 12.0)                       # change each moment gradually; later passes finish the job
     y = np.zeros(n)
     for k, w in enumerate(bank):
         g = np.interp(tt_full, np.arange(-1, m + 1), np.concatenate([gain[-1:, k], gain[:, k], gain[:1, k]]))  # wraps around

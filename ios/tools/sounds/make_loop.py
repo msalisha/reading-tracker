@@ -10,6 +10,7 @@ ap.add_argument("--roar", type=float, default=None, help="add a low fire roar at
 ap.add_argument("--start", type=float, default=None)
 ap.add_argument("--target", type=float, default=-24.0, help="loudness (dBFS RMS)")
 ap.add_argument("--highpass", type=float, default=0)
+ap.add_argument("--periodic", action="store_true", help="the source already loops perfectly (texture.py output): use it whole, no crossfade")
 a = ap.parse_args()
 
 def decode(path):
@@ -23,7 +24,7 @@ if a.highpass:  # gentle one-pole high-pass to remove rumble/handling noise
     k = np.exp(-2*np.pi*a.highpass/SR); y = np.zeros_like(x); lp = np.zeros(x.shape[1], dtype=np.float32)
     for i in range(len(x)): lp = k*lp + (1-k)*x[i]; y[i] = x[i]-lp
     x = y
-L = int(a.seconds*SR); C = int(3*SR)
+L = len(x) if a.periodic else int(a.seconds*SR); C = int(3*SR)
 rng = np.random.default_rng(7)
 
 def steadiest(x, n):
@@ -37,7 +38,9 @@ def steadiest(x, n):
         if score < bs: bs, best = score, s
     return best*blk
 
-if a.shuffle:
+if a.periodic:
+    seg = np.concatenate([x, x[:C]], axis=0)
+elif a.shuffle:
     piece, fade = int(4.5*SR), int(0.8*SR)
     out = np.zeros((L + C + piece, x.shape[1]), np.float32); pos = 0
     ramp = np.linspace(0, 1, fade, dtype=np.float32)[:, None]
@@ -54,10 +57,11 @@ else:
 # seamless loop: the stretch just after the end is crossfaded into the start
 t = np.linspace(0, np.pi/2, C, dtype=np.float32)[:, None]
 loop = seg[:L].copy()
-loop[:C] = seg[:C]*np.sin(t) + seg[L:L+C]*np.cos(t)
+if not a.periodic: loop[:C] = seg[:C]*np.sin(t) + seg[L:L+C]*np.cos(t)
 
 if loop.shape[1] == 1:  # mono recording: a different stretch in each ear gives natural width
-    loop = np.concatenate([loop, np.roll(loop, L//2, axis=0)], axis=1)
+    other = np.roll(loop, L//2, axis=0)
+    loop = np.concatenate([loop + 0.35*other, other + 0.35*loop], axis=1) if a.periodic else np.concatenate([loop, other], axis=1)
 
 if a.roar is not None:  # a soft low roar under crackles, made loop-safe the same way
     n = L + C; w = rng.standard_normal((n, 2)).astype(np.float32)
