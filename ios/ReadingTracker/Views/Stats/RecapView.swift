@@ -13,11 +13,6 @@ struct RecapView: View {
     @Query private var notes: [BookNote]
     @State private var page = 0
     @State private var shareImage: UIImage?
-    /// "Auto" picks a matching background for each page; otherwise one style for every page.
-    @AppStorage("recapBackground") private var backgroundRaw = "Auto"
-
-    private var chosen: CardBackground? { CardBackground(rawValue: backgroundRaw) }
-
     private var covers: [String: Data] {
         var m: [String: Data] = [:]
         for b in books { if let c = b.coverData { m[b.uid] = c } }
@@ -42,7 +37,7 @@ struct RecapView: View {
                 } else {
                     TabView(selection: $page) {
                         ForEach(Array(slides.enumerated()), id: \.offset) { item in
-                            RecapSlideView(slide: item.element, recap: r, covers: covers, theme: theme, background: chosen)
+                            RecapSlideView(slide: item.element, recap: r, covers: covers, theme: theme)
                                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                                 .padding(.horizontal, 20)
                                 .tag(item.offset)
@@ -80,15 +75,6 @@ struct RecapView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
-                        Picker("Background", selection: $backgroundRaw) {
-                            Label("Matching each page", systemImage: "wand.and.stars").tag("Auto")
-                            ForEach(CardBackground.allCases) { Label($0.rawValue, systemImage: $0.icon).tag($0.rawValue) }
-                        }
-                    } label: { Label("Background", systemImage: "paintbrush") }
-                    .accessibilityIdentifier("recapBackground")
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
                         let now = Date()
                         Button("This month") { choose(.thisMonth(now)) }
                         Button("Last month") { choose(.lastMonth(now)) }
@@ -100,7 +86,6 @@ struct RecapView: View {
             .onAppear { render(slides, r) }
             .onChange(of: page) { _, _ in render(slides, r) }
             .onChange(of: period) { _, _ in render(RecapSlide.slides(for: recap), recap) }
-            .onChange(of: backgroundRaw) { _, _ in render(slides, r) }
         }
     }
 
@@ -113,7 +98,7 @@ struct RecapView: View {
     @MainActor private func render(_ slides: [RecapSlide], _ r: Recap) {
         guard !slides.isEmpty, !r.isEmpty else { shareImage = nil; return }
         let slide = slides[min(page, slides.count - 1)]
-        let view = RecapSlideView(slide: slide, recap: r, covers: covers, theme: theme, background: chosen)
+        let view = RecapSlideView(slide: slide, recap: r, covers: covers, theme: theme)
             .frame(width: 360, height: 640)
         let renderer = ImageRenderer(content: view)
         renderer.scale = 3
@@ -136,94 +121,187 @@ enum RecapSlide: Hashable {
 }
 
 /// One slide. Takes everything it needs as plain values, so it can also be drawn into a picture.
+/// Each page is a bold block of colour from the theme, with chunky type, stickers and tilted covers.
 struct RecapSlideView: View {
     let slide: RecapSlide
     let recap: Recap
     let covers: [String: Data]
     let theme: AppTheme
-    /// nil = the matching background for this page.
-    var background: CardBackground? = nil
 
-    /// Each page gets a background that suits it.
-    private var style: CardBackground {
-        if let background { return background }
+    private var ink: Color { Color(hex: 0x111113) }
+    private var cream: Color { Color(hex: 0xFFF4E0) }
+    private var night: Bool { slide == .habits || slide == .quote || slide == .summary }
+
+    /// Page colour, text colour, and the accent used for big numbers and stickers.
+    private var bg: Color {
         switch slide {
-        case .intro: return .glow
-        case .books: return recap.finished.count <= 6 ? .shelf : .glow
-        case .time: return .paper
-        case .habits: return .glow
-        case .favourite: return .openBook
-        case .quote: return .paper
-        case .summary: return recap.finished.isEmpty ? .glow : .confetti
+        case .intro: return theme.brand
+        case .time: return theme.highlight
+        case .books, .favourite: return cream
+        case .habits, .summary: return ink
+        case .quote: return Color(hex: 0x16101F)
         }
     }
+    private var fg: Color {
+        switch slide {
+        case .intro: return theme.onBrand
+        case .time: return theme.onHighlight
+        case .books, .favourite: return ink
+        case .habits, .summary, .quote: return .white
+        }
+    }
+    private var accent: Color {
+        switch slide {
+        case .intro: return theme.highlight
+        case .time: return theme.onHighlight
+        case .books, .favourite: return theme.brandText
+        case .habits, .summary, .quote: return theme.highlight
+        }
+    }
+    private var muted: Color { fg.opacity(0.62) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 5) {
-                Capsule().fill(theme.brand).frame(width: 40, height: 7)
-                Capsule().fill(theme.highlight).frame(width: 26, height: 7)
-                Capsule().fill(theme.boardMuted).frame(width: 14, height: 7)
-                Spacer()
-                Text(recap.period.title.uppercased()).font(.caption.weight(.heavy)).foregroundStyle(theme.boardMuted)
+        ZStack {
+            bg
+            decoration
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text(recap.period.title.uppercased())
+                        .font(.system(size: 11, weight: .black)).tracking(1)
+                        .foregroundStyle(bg)
+                        .padding(.horizontal, 11).padding(.vertical, 6)
+                        .background(fg, in: Capsule())
+                    Spacer()
+                    Text("Pageturner").font(.system(size: 11, weight: .heavy, design: .rounded)).foregroundStyle(muted)
+                }
+                content
+                Spacer(minLength: 0)
             }
-            content
-            Spacer(minLength: 0)
-            HStack {
-                Spacer()
-                Text("Pageturner").font(.caption.weight(.heavy)).foregroundStyle(theme.boardMuted)
+            .padding(26)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .foregroundStyle(fg)
+        .clipped()
+        .environment(\.colorScheme, night ? .dark : .light)
+    }
+
+    /// Shapes behind the text: colour blocks, dots, stars or a soft glow, depending on the page.
+    @ViewBuilder private var decoration: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            switch slide {
+            case .intro:
+                Circle().fill(theme.highlight).frame(width: w * 0.95, height: w * 0.95).position(x: w * 0.12, y: h * 0.93)
+                RoundedRectangle(cornerRadius: 40, style: .continuous).fill(theme.onBrand)
+                    .frame(width: 180, height: 180).rotationEffect(.degrees(18)).position(x: w * 1.02, y: h * 0.0)
+                Burst(points: 4, inner: 0.3).fill(theme.onBrand).frame(width: 34, height: 34).position(x: w * 0.82, y: h * 0.62)
+            case .books, .favourite:
+                Canvas { ctx, s in
+                    var y: CGFloat = 8
+                    while y < s.height {
+                        var x: CGFloat = 8
+                        while x < s.width {
+                            ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: 2.6, height: 2.6)), with: .color(Color.black.opacity(0.12)))
+                            x += 16
+                        }
+                        y += 16
+                    }
+                }
+                Burst(points: 7, inner: 0.42).fill(theme.highlight).frame(width: 96, height: 96)
+                    .rotationEffect(.degrees(-8)).position(x: w * 0.86, y: h * 0.9)
+                Burst(points: 4, inner: 0.3).fill(ink).frame(width: 26, height: 26).position(x: w * 0.66, y: h * 0.95)
+            case .time:
+                Circle().fill(theme.brand).frame(width: w * 0.8, height: w * 0.8).position(x: w * 0.98, y: h * 0.96)
+                Squiggle().stroke(theme.onHighlight, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .frame(width: 70, height: 26).position(x: w * 0.78, y: h * 0.16)
+            case .habits, .summary:
+                Circle().fill(theme.brand).frame(width: w * 0.55, height: w * 0.55).position(x: w * 1.0, y: h * 0.03)
+                Burst(points: 4, inner: 0.3).fill(theme.highlight).frame(width: 30, height: 30).position(x: w * 0.7, y: h * 0.07)
+            case .quote:
+                Canvas { ctx, s in
+                    func blob(_ x: CGFloat, _ y: CGFloat, _ r: CGFloat, _ c: Color, _ o: Double) {
+                        let center = CGPoint(x: s.width * x, y: s.height * y), radius = s.width * r
+                        ctx.fill(Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)),
+                                 with: .radialGradient(Gradient(colors: [c.opacity(o), c.opacity(o * 0.45), c.opacity(0)]),
+                                                       center: center, startRadius: 0, endRadius: radius))
+                    }
+                    blob(0.1, 0.08, 0.95, theme.brand, 0.95)
+                    blob(1.0, 0.5, 0.9, theme.brandText, 0.8)
+                    blob(0.3, 1.02, 0.85, theme.highlight, 0.6)
+                    var rng = Seeded(11)
+                    for _ in 0..<5200 {
+                        let r = CGRect(x: rng.next() * s.width, y: rng.next() * s.height, width: 1, height: 1)
+                        ctx.fill(Path(r), with: .color(Color.white.opacity(0.05 + 0.1 * Double(rng.next()))))
+                    }
+                }
             }
         }
-        .padding(28)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(CardBackdrop(style: style, theme: theme))
-        .foregroundStyle(theme.boardText)
-        .environment(\.colorScheme, .dark)
+        .accessibilityHidden(true)
+    }
+
+    private func headline(_ text: String) -> some View {
+        Text(text).font(.system(size: 34, weight: .black)).fontWidth(.condensed).minimumScaleFactor(0.6)
+    }
+
+    /// A white label with a hard shadow, like a sticker.
+    private func sticker(_ label: String, _ value: String, tilt: Double = -3) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(label.uppercased()).font(.system(size: 10, weight: .black)).tracking(0.8).foregroundStyle(ink.opacity(0.6))
+            Text(value).font(.system(size: 16, weight: .black)).foregroundStyle(ink).lineLimit(2).minimumScaleFactor(0.7)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 9)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(night ? theme.brand : ink).offset(x: 5, y: 5)
+                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white)
+                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(ink, lineWidth: 2.5)
+            }
+        )
+        .rotationEffect(.degrees(tilt))
     }
 
     @ViewBuilder private var content: some View {
         switch slide {
         case .intro:
             Spacer(minLength: 0)
-            Text("Your \(recap.period.shortTitle) in books")
-                .font(.system(size: 44, weight: .black, design: .rounded))
-                .minimumScaleFactor(0.5)
-            Text(recap.period.isYear ? "A year of turning pages. Swipe to see it." : "A month of turning pages. Swipe to see it.")
-                .font(.title3.weight(.medium)).foregroundStyle(theme.boardMuted)
-        case .books:
-            Spacer(minLength: 0)
-            big("\(recap.finished.count)", recap.finished.count == 1 ? "book finished" : "books finished", theme.highlight)
-            finishedShowcase
+            Text("YOUR\n\(recap.period.shortTitle.uppercased())\nIN BOOKS")
+                .font(.system(size: 64, weight: .black)).fontWidth(.condensed)
+                .minimumScaleFactor(0.4)
+            sticker("Swipe", recap.period.isYear ? "A year of turning pages →" : "A month of turning pages →")
                 .padding(.top, 6)
+            Spacer(minLength: 0)
+            Spacer(minLength: 0)
+        case .books:
+            big("\(recap.finished.count)", recap.finished.count == 1 ? "book finished" : "books finished", accent)
+            finishedShowcase
+                .padding(.top, 10)
             if recap.writtenOff > 0 {
-                Text("…and \(recap.writtenOff) you wisely let go.").font(.subheadline).foregroundStyle(theme.boardMuted)
+                Text("…and \(recap.writtenOff) you wisely let go.").font(.subheadline.weight(.semibold)).foregroundStyle(muted)
             }
-            Spacer(minLength: 0)
-            Spacer(minLength: 0)
         case .time:
             Spacer(minLength: 0)
-            big(recap.pages.formatted(), "pages read", theme.brand)
+            big(recap.pages.formatted(), "pages read", accent)
             if recap.minutes > 0 {
-                big(recap.hours >= 10 ? "\(Int(recap.hours.rounded()))" : String(format: "%.1f", recap.hours), "hours with a book", theme.highlight)
+                sticker("Time with a book", "\(recap.hours >= 10 ? "\(Int(recap.hours.rounded()))" : String(format: "%.1f", recap.hours)) hours", tilt: -4)
             }
-            Text("Across \(recap.sessions) reading \(recap.sessions == 1 ? "session" : "sessions").")
-                .font(.title3.weight(.medium)).foregroundStyle(theme.boardMuted)
+            sticker("Reading sessions", "\(recap.sessions)", tilt: 3).padding(.leading, 28)
+            Spacer(minLength: 0)
+            Spacer(minLength: 0)
         case .habits:
             Spacer(minLength: 0)
-            big("\(recap.readingDays)", "of \(recap.daysElapsed) days you read", theme.brand)
-            big("\(recap.longestStreak)", recap.longestStreak == 1 ? "day: your longest streak" : "days: your longest streak", theme.highlight)
+            big("\(recap.readingDays)", "of \(recap.daysElapsed) days you read", theme.highlight)
+            big("\(recap.longestStreak)", recap.longestStreak == 1 ? "day: your longest streak" : "days: your longest streak", theme.brand)
             if let best = recap.bestDay {
-                line("Biggest day", "\(best.pages) pages on \(Day.short(best.day))")
+                sticker("Biggest day", "\(best.pages) pages on \(Day.short(best.day))", tilt: -3)
             }
-            if let wd = recap.favouriteWeekday { line("Favourite reading day", wd + "s") }
+            if let wd = recap.favouriteWeekday { sticker("Favourite day", wd + "s", tilt: 3).padding(.leading, 28) }
+            Spacer(minLength: 0)
         case .favourite:
             if recap.finished.count == 1, let b = recap.finished.first {
-                Text(recap.period.isYear ? "Book of the year" : "Book of the month")
-                    .font(.system(size: 30, weight: .black, design: .rounded))
-                    .padding(.top, 8)
+                headline(recap.period.isYear ? "BOOK OF THE YEAR" : "BOOK OF THE MONTH").padding(.top, 6)
                 singleBook(b)
             } else {
-                Text("Highlights").font(.system(size: 30, weight: .black, design: .rounded)).padding(.top, 8)
+                headline("HIGHLIGHTS").padding(.top, 6)
                 VStack(alignment: .leading, spacing: 18) {
                     ForEach(highlightRows, id: \.book.id) { row in highlight(row) }
                 }
@@ -231,43 +309,51 @@ struct RecapSlideView: View {
         case .quote:
             if let q = recap.quote {
                 Spacer(minLength: 0)
-                Text("“").font(.system(size: 80, weight: .black, design: .serif)).foregroundStyle(theme.highlight).frame(height: 40, alignment: .top)
-                Text(q.text).font(.system(size: 26, weight: .semibold, design: .serif)).minimumScaleFactor(0.35).lineSpacing(5)
-                Text(q.bookTitle + (q.author.isEmpty ? "" : " · \(q.author)")).font(.headline).foregroundStyle(theme.brand)
+                Text("“\(q.text)”")
+                    .font(.system(size: 28, design: .serif)).italic()
+                    .minimumScaleFactor(0.35).lineSpacing(5)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                Text((q.bookTitle + (q.author.isEmpty ? "" : " · \(q.author)")).uppercased())
+                    .font(.system(size: 10, weight: .semibold)).tracking(2.2)
+                    .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                    .padding(.top, 8)
+                Spacer(minLength: 0)
             }
         case .summary:
-            Text("My \(recap.period.shortTitle) in books").font(.system(size: 30, weight: .black, design: .rounded)).minimumScaleFactor(0.6)
-            LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)], spacing: 18) {
-                tile("\(recap.finished.count)", recap.finished.count == 1 ? "book" : "books", theme.highlight)
-                tile(recap.pages.formatted(), "pages", theme.brand)
-                tile(recap.minutes > 0 ? (recap.hours >= 10 ? "\(Int(recap.hours.rounded()))" : String(format: "%.1f", recap.hours)) : "–", "hours", theme.boardText)
-                tile("\(recap.longestStreak)", "day streak", theme.boardText)
-                if let avg = recap.averageRating { tile(String(format: "%.1f★", avg), "average rating", theme.boardText) }
-                tile("\(recap.readingDays)", "reading days", theme.boardText)
+            headline("MY \(recap.period.shortTitle.uppercased()) IN BOOKS")
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                tile("\(recap.finished.count)", recap.finished.count == 1 ? "book" : "books", theme.highlight, theme.onHighlight)
+                tile(recap.pages.formatted(), "pages", theme.brand, theme.onBrand)
+                tile(recap.minutes > 0 ? (recap.hours >= 10 ? "\(Int(recap.hours.rounded()))" : String(format: "%.1f", recap.hours)) : "–", "hours", .white, ink)
+                tile("\(recap.longestStreak)", "day streak", Color(hex: 0x2A2A30), .white)
+                if let avg = recap.averageRating { tile(String(format: "%.1f★", avg), "average rating", Color(hex: 0x2A2A30), .white) }
+                tile("\(recap.readingDays)", "reading days", avgTileColor, recap.averageRating == nil ? .white : ink)
             }
-            if !recap.finished.isEmpty { shelf }
+            if !recap.finished.isEmpty { shelf.padding(.top, 4) }
         }
     }
+
+    private var avgTileColor: Color { recap.averageRating == nil ? Color(hex: 0x2A2A30) : .white }
 
     private func big(_ value: String, _ label: String, _ color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(value).font(.system(size: 64, weight: .black, design: .rounded)).foregroundStyle(color).minimumScaleFactor(0.5).lineLimit(1)
-            Text(label).font(.title3.weight(.semibold))
+        VStack(alignment: .leading, spacing: -4) {
+            Text(value).font(.system(size: 92, weight: .black)).fontWidth(.condensed)
+                .foregroundStyle(color).minimumScaleFactor(0.4).lineLimit(1)
+            Text(label).font(.system(size: 19, weight: .heavy))
         }
     }
 
-    private func tile(_ value: String, _ label: String, _ color: Color) -> some View {
+    /// A bento tile: a block of colour with a big number.
+    private func tile(_ value: String, _ label: String, _ fill: Color, _ text: Color) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(value).font(.system(size: 34, weight: .black, design: .rounded)).foregroundStyle(color).minimumScaleFactor(0.5).lineLimit(1)
-            Text(label).font(.subheadline).foregroundStyle(theme.boardMuted)
+            Text(value).font(.system(size: 38, weight: .black)).fontWidth(.condensed).minimumScaleFactor(0.5).lineLimit(1)
+            Text(label).font(.system(size: 12, weight: .bold)).opacity(0.75)
         }
-    }
-
-    private func line(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.subheadline).foregroundStyle(theme.boardMuted)
-            Text(value).font(.title3.weight(.bold))
-        }
+        .foregroundStyle(text)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .background(fill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     /// One finished book, shown large: cover, title, author, rating, and how long it took.
@@ -280,9 +366,9 @@ struct RecapSlideView: View {
                 .shadow(color: .black.opacity(0.35), radius: 10, y: 6)
             VStack(alignment: .leading, spacing: 6) {
                 Text(b.title).font(.system(size: 26, weight: .heavy)).lineLimit(3).minimumScaleFactor(0.7)
-                if !b.author.isEmpty { Text(b.author).font(.title3).foregroundStyle(theme.boardMuted) }
-                if let s = stars(b.rating) { Text(s).font(.title2).foregroundStyle(theme.highlight) }
-                Text(facts).font(.headline).foregroundStyle(theme.highlight)
+                if !b.author.isEmpty { Text(b.author).font(.title3).foregroundStyle(muted) }
+                if let s = stars(b.rating) { Text(s).font(.title2).foregroundStyle(accent) }
+                Text(facts).font(.headline).foregroundStyle(accent)
             }
         }
     }
@@ -315,10 +401,10 @@ struct RecapSlideView: View {
         HStack(alignment: .center, spacing: 14) {
             cover(row.book, width: 58)
             VStack(alignment: .leading, spacing: 3) {
-                Text(row.labels.joined(separator: " & ").uppercased()).font(.caption.weight(.heavy)).foregroundStyle(theme.boardMuted)
+                Text(row.labels.joined(separator: " & ").uppercased()).font(.caption.weight(.heavy)).foregroundStyle(muted)
                 Text(row.book.title).font(.headline.weight(.heavy)).lineLimit(2)
                 if !row.details.isEmpty {
-                    Text(row.details.joined(separator: " · ")).font(.subheadline.weight(.semibold)).foregroundStyle(theme.highlight)
+                    Text(row.details.joined(separator: " · ")).font(.subheadline.weight(.semibold)).foregroundStyle(accent)
                 }
             }
         }
@@ -334,9 +420,9 @@ struct RecapSlideView: View {
                 cover(b, width: 128)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(b.title).font(.title2.weight(.heavy)).lineLimit(4).minimumScaleFactor(0.7)
-                    if !b.author.isEmpty { Text(b.author).font(.subheadline).foregroundStyle(theme.boardMuted) }
-                    if let stars = stars(b.rating) { Text(stars).font(.title3).foregroundStyle(theme.highlight) }
-                    if let d = b.finishedDay { Text("Finished \(Day.short(d))").font(.subheadline.weight(.semibold)).foregroundStyle(theme.boardMuted) }
+                    if !b.author.isEmpty { Text(b.author).font(.subheadline).foregroundStyle(muted) }
+                    if let stars = stars(b.rating) { Text(stars).font(.title3).foregroundStyle(accent) }
+                    if let d = b.finishedDay { Text("Finished \(Day.short(d))").font(.subheadline.weight(.semibold)).foregroundStyle(muted) }
                 }
             }
         } else if n <= 3 {
@@ -346,7 +432,7 @@ struct RecapSlideView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         cover(b, width: w)
                         Text(b.title).font(.caption.weight(.bold)).lineLimit(2).frame(width: w, alignment: .leading)
-                        if let stars = stars(b.rating) { Text(stars).font(.caption).foregroundStyle(theme.highlight) }
+                        if let stars = stars(b.rating) { Text(stars).font(.caption).foregroundStyle(accent) }
                     }
                 }
             }
@@ -359,9 +445,9 @@ struct RecapSlideView: View {
                 ForEach(shown) { b in cover(b, width: w) }
                 if n > 12 {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous).fill(theme.boardGrid)
+                        RoundedRectangle(cornerRadius: 6, style: .continuous).fill(fg.opacity(0.15))
                         Text("+\(n - shown.count)\nmore").font(.system(size: 15, weight: .heavy, design: .rounded))
-                            .multilineTextAlignment(.center).foregroundStyle(theme.boardText)
+                            .multilineTextAlignment(.center).foregroundStyle(fg)
                     }
                     .frame(width: w, height: w * 1.5)
                 }
@@ -382,7 +468,7 @@ struct RecapSlideView: View {
         return HStack(spacing: n > 5 ? -12 : 8) {
             ForEach(shown) { b in cover(b, width: w) }
             if n > shown.count {
-                Text("+\(n - shown.count)").font(.headline.weight(.heavy)).foregroundStyle(theme.boardMuted).padding(.leading, 18)
+                Text("+\(n - shown.count)").font(.headline.weight(.heavy)).foregroundStyle(muted).padding(.leading, 18)
             }
         }
     }
@@ -404,7 +490,10 @@ struct RecapSlideView: View {
             }
         }
         .frame(width: width, height: width * 1.5)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(theme.board, lineWidth: 2))
+        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+        .padding(max(2, width * 0.035))
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .shadow(color: .black.opacity(0.22), radius: 5, y: 3)
+        .rotationEffect(.degrees(Double(b.id.unicodeScalars.reduce(0) { ($0 + Int($1.value)) % 7 }) - 3))
     }
 }

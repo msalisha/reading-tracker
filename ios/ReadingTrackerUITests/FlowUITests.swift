@@ -222,7 +222,7 @@ final class FlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["recapShare"].waitForExistence(timeout: 5), "the recap should render and be shareable")
         shot(app, "12-recap-intro")
         let slides = app.descendants(matching: .any)["recapSlides"]
-        for i in 1...3 {
+        for i in 1...6 {
             slides.swipeLeft()
             shot(app, "12-recap-\(i)")
         }
