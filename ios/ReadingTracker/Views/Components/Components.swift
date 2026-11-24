@@ -14,6 +14,8 @@ struct BigNumber: View {
             .foregroundStyle(color ?? .primary)
             .lineLimit(1)
             .minimumScaleFactor(0.5)
+            .contentTransition(.numericText())
+            .animation(.snappy, value: text)
     }
 }
 
@@ -163,16 +165,30 @@ struct CoverView: View {
             if let data, let img = UIImage(data: data) {
                 FittedCover(image: img)
             } else {
-                ZStack {
-                    theme.brand
-                    Text(title.prefix(1).uppercased())
-                        .font(.system(size: width * 0.45, weight: .black, design: .rounded))
-                        .foregroundStyle(theme.onBrand)
+                // a stand-in that still looks like a book: a spine shadow, a coloured band and the title
+                ZStack(alignment: .topLeading) {
+                    LinearGradient(colors: [theme.brand, theme.brandText], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    LinearGradient(colors: [Color.black.opacity(0.28), .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: max(3, width * 0.09))
+                    if width >= 64 {
+                        VStack(alignment: .leading, spacing: width * 0.06) {
+                            Rectangle().fill(theme.highlight).frame(width: width * 0.3, height: max(2, width * 0.03))
+                            Text(title).font(.system(size: width * 0.13, weight: .bold, design: .serif))
+                                .foregroundStyle(theme.onBrand).minimumScaleFactor(0.5).multilineTextAlignment(.leading)
+                        }
+                        .padding(.leading, width * 0.16).padding(.trailing, width * 0.08).padding(.top, width * 0.14)
+                    } else {
+                        Text(title.prefix(1).uppercased())
+                            .font(.system(size: width * 0.42, weight: .bold, design: .serif))
+                            .foregroundStyle(theme.onBrand)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 }
             }
         }
         .frame(width: width, height: width * 1.5)
-        .clipShape(RoundedRectangle(cornerRadius: width * 0.1, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: width * 0.08, style: .continuous))
+        .shadow(color: .black.opacity(0.14), radius: width * 0.06, y: width * 0.04)
         .accessibilityHidden(true)
     }
 }

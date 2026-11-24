@@ -43,3 +43,39 @@ extension View {
         #endif
     }
 }
+
+/// A short burst of confetti in the theme's colours, for finishing a book.
+struct ConfettiBurst: View {
+    let theme: AppTheme
+    @State private var start = Date()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if !reduceMotion {
+            TimelineView(.animation) { timeline in
+                Canvas { ctx, size in
+                    let t = timeline.date.timeIntervalSince(start)
+                    guard t < 3.2 else { return }
+                    var rng = Seeded(42)
+                    let colors = [theme.brand, theme.highlight, theme.brandText, Color.yellow, Color.white]
+                    for i in 0..<110 {
+                        let angle = Double(rng.next()) * .pi - .pi          // upwards fan
+                        let speed = 260 + Double(rng.next()) * 520
+                        let spin = Double(rng.next()) * 8 - 4
+                        let w = 6 + rng.next() * 7, h = 9 + rng.next() * 9
+                        let x = Double(size.width) / 2 + cos(angle) * speed * t
+                        let y = Double(size.height) * 0.42 + sin(angle) * speed * t + 520 * t * t
+                        var piece = ctx
+                        piece.opacity = max(0, 1 - t / 3.2)
+                        piece.translateBy(x: x, y: y)
+                        piece.rotate(by: .radians(spin * t))
+                        piece.fill(Path(roundedRect: CGRect(x: -w / 2, y: -h / 2, width: w, height: h), cornerRadius: 2),
+                                   with: .color(colors[i % colors.count]))
+                    }
+                }
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+    }
+}

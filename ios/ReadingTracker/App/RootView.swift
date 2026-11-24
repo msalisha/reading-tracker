@@ -43,6 +43,7 @@ struct RootView: View {
         .sheet(item: Binding(get: { router.rateBookID.map(RateTarget.init) }, set: { router.rateBookID = $0?.id })) { target in
             if let book = Library.book(ctx, uid: target.id) {
                 RateBookSheet(book: book).environment(\.theme, theme)
+                    .overlay(ConfettiBurst(theme: theme))
             }
         }
         .fullScreenCover(isPresented: Binding(get: { store.access == .noTrial && !lookingAround }, set: { _ in })) {

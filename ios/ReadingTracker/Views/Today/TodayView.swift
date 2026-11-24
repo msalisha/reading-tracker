@@ -17,6 +17,12 @@ struct TodayView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(now.formatted(.dateTime.weekday(.wide).day().month(.wide)).uppercased())
+                            .font(.caption.weight(.bold)).tracking(0.8).foregroundStyle(.secondary)
+                        Text(greeting(now)).font(.system(.largeTitle, design: .rounded, weight: .black))
+                    }
+                    .padding(.top, 4)
                     TrialBanner()
                     ScoreBoard(scores: Stats.scores(books: books.map(\.snap), sessions: snaps, now: now))
                     TimerCard(readingBooks: reading, sessions: snaps)
@@ -38,8 +44,9 @@ struct TodayView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
-            .navigationTitle(Date().formatted(.dateTime.weekday(.wide).day().month(.wide)))
+            .navigationTitle("Today")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .principal) { Text("") } }   // the greeting is the title
             .sheet(item: $logTarget) { target in
                 LogSessionSheet(books: reading, initialBookID: target.bookID)
                     .environment(\.theme, theme)
@@ -47,6 +54,14 @@ struct TodayView: View {
             .onChange(of: router.logBookID) { _, id in
                 if let id { open(id); router.logBookID = nil }
             }
+        }
+    }
+
+    private func greeting(_ now: Date) -> String {
+        switch Day.calendar.component(.hour, from: now) {
+        case 5..<12: return "Good morning"
+        case 12..<18: return "Good afternoon"
+        default: return "Good evening"
         }
     }
 
@@ -61,42 +76,56 @@ private struct LogTarget: Identifiable {
     var id: String { bookID }
 }
 
+/// Today's numbers as a bento grid: the streak and today lead, then the week, the month and books finished.
 struct ScoreBoard: View {
     let scores: Scores
     @Environment(\.theme) private var theme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 16) {
-                GridRow {
-                    score("Today", "\(scores.today.formatted())", "pages")
-                    score("Streak", "\(scores.streak)", scores.streak == 1 ? "day" : "days in a row", highlight: scores.streak > 0)
-                }
-                GridRow {
-                    score("This week", scores.week.formatted(), "pages · " + Stats.versus(scores.week, scores.lastWeekSoFar, "last week"))
-                    score("This month", scores.month.formatted(), "pages · " + Stats.versus(scores.month, scores.lastMonthSoFar, "last month"))
-                }
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                tile("Streak", "flame.fill", "\(scores.streak)", scores.streak == 1 ? "day in a row" : "days in a row",
+                     fill: scores.streak > 0 ? theme.highlight : theme.surface,
+                     text: scores.streak > 0 ? theme.onHighlight : Color.primary, big: true)
+                tile("Today", "book.fill", scores.today.formatted(), scores.today == 1 ? "page" : "pages",
+                     fill: theme.board, text: theme.boardText, big: true)
             }
-            Divider().overlay(theme.boardGrid)
+            HStack(spacing: 10) {
+                tile("This week", "calendar", scores.week.formatted(), Stats.versus(scores.week, scores.lastWeekSoFar, "last week"),
+                     fill: theme.surface, text: Color.primary)
+                tile("This month", "chart.bar.fill", scores.month.formatted(), Stats.versus(scores.month, scores.lastMonthSoFar, "last month"),
+                     fill: theme.surface, text: Color.primary)
+            }
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Eyebrow("Finished this month", color: theme.boardMuted)
-                BigNumber(text: "\(scores.finishedThisMonth)", color: theme.highlight, size: 30)
+                Image(systemName: "checkmark.seal.fill").font(.headline)
+                Text("Finished this month").font(.subheadline.weight(.bold))
+                Spacer()
+                BigNumber(text: "\(scores.finishedThisMonth)", color: theme.onBrand, size: 28)
                 Text((scores.finishedThisMonth == 1 ? "book" : "books") + (scores.dnfThisMonth > 0 ? " · \(scores.dnfThisMonth) written off" : ""))
-                    .font(.footnote).foregroundStyle(theme.boardMuted)
+                    .font(.footnote.weight(.semibold))
             }
+            .foregroundStyle(theme.onBrand)
+            .padding(.horizontal, 18).padding(.vertical, 12)
+            .background(theme.brand, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
-        .card(theme.board, radius: 24, padding: 18)
-        .foregroundStyle(theme.boardText)
         .accessibilityElement(children: .combine)
     }
 
-    private func score(_ label: String, _ value: String, _ sub: String, highlight: Bool = false) -> some View {
+    private func tile(_ label: String, _ icon: String, _ value: String, _ sub: String,
+                      fill: Color, text: Color, big: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Eyebrow(label, color: theme.boardMuted)
-            BigNumber(text: value, color: highlight ? theme.highlight : theme.boardText)
-            Text(sub).font(.footnote).foregroundStyle(theme.boardMuted).fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 5) {
+                Image(systemName: icon).font(.caption.weight(.bold))
+                Text(label.uppercased()).font(.caption.weight(.bold)).tracking(0.8)
+            }
+            .opacity(0.7)
+            BigNumber(text: value, color: text, size: big ? 46 : 32)
+            Text(sub).font(.footnote.weight(.medium)).opacity(0.7).lineLimit(2).fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(text)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(16)
+        .background(fill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
 
