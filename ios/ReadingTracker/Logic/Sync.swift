@@ -8,11 +8,14 @@ import SwiftData
 @MainActor
 enum Sync {
     private static var pending: Task<Void, Never>?
+    private static var observer: NSObjectProtocol?
 
     /// Merge duplicates now, and again shortly after each batch of changes arrives from iCloud.
     static func watch(_ container: ModelContainer) {
         dedupe(container.mainContext)
-        NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main) { _ in
+        if let observer { NotificationCenter.default.removeObserver(observer) }   // only watch the current library
+        pending?.cancel()
+        observer = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated {
                 pending?.cancel()
                 pending = Task { @MainActor in
@@ -97,10 +100,11 @@ enum Sync {
     // MARK: - Status for Settings
 
     enum Status: Equatable {
-        case on, signedOut, restricted, unavailable, checking
+        case on, turnedOff, signedOut, restricted, unavailable, checking
         var title: String {
             switch self {
             case .on: return "On"
+            case .turnedOff: return "Off"
             case .signedOut: return "Off"
             case .restricted: return "Off"
             case .unavailable: return "Not available"
@@ -110,6 +114,7 @@ enum Sync {
         var detail: String {
             switch self {
             case .on: return "Your books, sessions, notes and covers stay in sync on every iPhone and iPad signed in to your Apple Account. Changes can take a minute to appear."
+            case .turnedOff: return "Your library is kept on this device only. Anything already in iCloud stays there, and syncing picks up again when you turn this back on."
             case .signedOut: return "Sign in to iCloud in the Settings app (tap your name, then iCloud) and make sure Pageturner is allowed to use it, to keep your library in sync and safe if you change phones."
             case .restricted: return "iCloud is restricted on this device (for example by Screen Time or a work profile), so your library is kept on this device only."
             case .unavailable: return "Your library is kept on this device only."
@@ -119,6 +124,7 @@ enum Sync {
     }
 
     static func status() async -> Status {
+        guard Persistence.syncEnabled else { return .turnedOff }
         guard let id = Persistence.cloudContainerID else {
             return FileManager.default.ubiquityIdentityToken != nil ? .on : .unavailable
         }

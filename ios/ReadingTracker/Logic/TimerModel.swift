@@ -75,4 +75,6 @@ final class Router {
     var logBookID: String?
     /// Asks the Today tab to start a timer for a book (from a widget).
     var startTimerBookID: String?
+    /// Bumped when the iCloud sync switch changes, so the app reopens the library with the new setting.
+    var libraryGeneration = 0
 }

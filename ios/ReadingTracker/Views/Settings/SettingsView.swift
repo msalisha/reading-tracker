@@ -17,6 +17,7 @@ struct SettingsView: View {
     @State private var exportFile: URL?
     @State private var csvFile: URL?
     @State private var sync: Sync.Status = .checking
+    @State private var syncOn = Persistence.syncEnabled
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -45,12 +46,14 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    LabeledContent {
-                        Text(sync.title).foregroundStyle(sync == .on ? theme.brandText : .secondary)
-                    } label: {
-                        Label("iCloud sync", systemImage: sync == .on ? "checkmark.icloud.fill" : "icloud.slash")
+                    Toggle(isOn: Binding(get: { syncOn }, set: setSync)) {
+                        Label("Sync with iCloud", systemImage: sync == .on ? "checkmark.icloud.fill" : "icloud")
                     }
-                    .accessibilityIdentifier("syncStatus")
+                    .tint(theme.brand)
+                    .accessibilityIdentifier("syncToggle")
+                    if syncOn, sync != .on, sync != .checking {
+                        LabeledContent("Status", value: sync.title).accessibilityIdentifier("syncStatus")
+                    }
                 } header: {
                     Text("iCloud")
                 } footer: {
@@ -122,6 +125,15 @@ struct SettingsView: View {
         case .loading:
             ProgressView()
         }
+    }
+
+    /// Save the choice and reopen the library with sync on or off. Nothing is deleted either way.
+    private func setSync(_ on: Bool) {
+        guard on != Persistence.syncEnabled else { return }
+        Persistence.syncEnabled = on
+        syncOn = on
+        sync = on ? .checking : .turnedOff
+        router.libraryGeneration += 1
     }
 
     private func choose(_ t: AppTheme) {

@@ -6,12 +6,15 @@ struct ReadingTrackerApp: App {
     @State private var store: Store
     @State private var timer = TimerModel()
     @State private var router = Router()
-    private let container: ModelContainer
+    @State private var container: ModelContainer
+    private let uiTest: Bool
 
     init() {
         let args = ProcessInfo.processInfo.arguments
         let uiTest = args.contains("-uitest")
-        container = Persistence.makeContainer(inMemory: uiTest)
+        self.uiTest = uiTest
+        let container = Persistence.makeContainer(inMemory: uiTest)
+        _container = State(initialValue: container)
         if !uiTest { Sync.watch(container) }
         var forced: Access?
         #if DEBUG
@@ -42,7 +45,13 @@ struct ReadingTrackerApp: App {
                 .environment(store)
                 .environment(timer)
                 .environment(router)
+                .modelContainer(container)
+                .id(ObjectIdentifier(container))   // a fresh view tree (and queries) for a reopened library
+                .onChange(of: router.libraryGeneration) { _, _ in
+                    guard !uiTest else { return }
+                    container = Persistence.makeContainer()
+                    Sync.watch(container)
+                }
         }
-        .modelContainer(container)
     }
 }

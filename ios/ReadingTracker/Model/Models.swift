@@ -128,6 +128,12 @@ enum Persistence {
     /// The iCloud container the library syncs with, or nil when this build has no iCloud entitlement (e.g. CI).
     nonisolated(unsafe) static private(set) var cloudContainerID: String?
 
+    /// The in-app iCloud sync switch (on unless the user turns it off).
+    static var syncEnabled: Bool {
+        get { AppGroup.defaults.object(forKey: "iCloudSyncEnabled") as? Bool ?? true }
+        set { AppGroup.defaults.set(newValue, forKey: "iCloudSyncEnabled") }
+    }
+
     static func makeContainer(inMemory: Bool = false) -> ModelContainer {
         if inMemory {
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
@@ -141,6 +147,12 @@ enum Persistence {
             return ModelConfiguration(schema: schema, cloudKitDatabase: db)
         }
         prepareForSync(config(.none))
+        cloudContainerID = nil
+        guard syncEnabled else {
+            do { return try ModelContainer(for: schema, configurations: [config(.none)]) } catch {
+                fatalError("Couldn't open the library: \(error)")
+            }
+        }
         // .automatic syncs with the iCloud container in the app's entitlements, and stays on-device when there is none.
         let cloud = config(.automatic)
         do {
