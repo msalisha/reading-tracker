@@ -16,6 +16,8 @@ struct SettingsView: View {
     @State private var message: String?
     @State private var exportFile: URL?
     @State private var csvFile: URL?
+    @State private var sync: Sync.Status = .checking
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -43,6 +45,20 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    LabeledContent {
+                        Text(sync.title).foregroundStyle(sync == .on ? theme.brandText : .secondary)
+                    } label: {
+                        Label("iCloud sync", systemImage: sync == .on ? "checkmark.icloud.fill" : "icloud.slash")
+                    }
+                    .accessibilityIdentifier("syncStatus")
+                } header: {
+                    Text("iCloud")
+                } footer: {
+                    Text(sync.detail)
+                }
+                .task(id: scenePhase) { if scenePhase == .active { sync = await Sync.status() } }
+
+                Section {
                     if let message {
                         Label(message, systemImage: message.hasPrefix("Imported") ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                             .foregroundStyle(theme.brandText)
@@ -58,7 +74,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Your data")
                 } footer: {
-                    Text("Everything is stored on this iPhone: \(books.count) books and \(sessions.count) sessions. Import a backup from Pageturner or the web Reading Tracker (Log → Save a backup) to bring your history across.")
+                    Text("\(sync == .on ? "Your library" : "Stored on this iPhone"): \(books.count) books and \(sessions.count) sessions. Import a backup from Pageturner or the web Reading Tracker (Log → Save a backup) to bring your history across.")
                 }
 
                 Section("About") {

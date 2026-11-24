@@ -12,6 +12,7 @@ struct ReadingTrackerApp: App {
         let args = ProcessInfo.processInfo.arguments
         let uiTest = args.contains("-uitest")
         container = Persistence.makeContainer(inMemory: uiTest)
+        if !uiTest { Sync.watch(container) }
         var forced: Access?
         #if DEBUG
         // UI tests and screenshots: -access unlocked|trial|expired|none

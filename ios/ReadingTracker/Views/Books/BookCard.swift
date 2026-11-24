@@ -78,7 +78,7 @@ struct BookCard: View {
             Text("It stops on page \(book.currentPage) and moves to the shelf. Your pages still count.")
         }
         .confirmationDialog("Delete \(book.title)?", isPresented: $askDelete, titleVisibility: .visible) {
-            Button("Delete book and its \(book.sessions.count) sessions", role: .destructive) { Library.delete(ctx, book) }
+            Button("Delete book and its \(book.sessions?.count ?? 0) sessions", role: .destructive) { Library.delete(ctx, book) }
         } message: {
             Text("This can't be undone.")
         }

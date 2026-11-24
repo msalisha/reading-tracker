@@ -11,11 +11,13 @@
 | **Book page** | Cover (tap it to use the ISBN's cover, **search Google Images** inside the app, choose from Photos or take a photo), progress, **star rating** (optional, half stars), **notes**: quotes and thoughts with an optional page number, **scan a quote from the page** with the camera, **share any quote as a picture** (square or story size, in any colour scheme), copy, edit details |
 | **Stats** | **Monthly recap** and **Year in review** (story-style pages you can swipe and share as pictures), finished this month (spines and calendar), pages by day, week or month, your average day, books per month and average rating |
 | **Log** | Every session by day (swipe to delete), plus **search across all your notes** |
-| **Settings** | **6 colour schemes** (the app icon changes to match), light/dark, purchase and Restore, import and export a backup (JSON), spreadsheet export (CSV) |
+| **Settings** | **6 colour schemes** (the app icon changes to match), light/dark, purchase and Restore, **iCloud sync** status, import and export a backup (JSON), spreadsheet export (CSV) |
 
 Outside the app:
 - **Lock screen and Dynamic Island:** the timer, with Pause and Resume buttons.
 - **Widgets:** streak (home screen and lock screen) and current book (with a Start timer button).
+
+**iCloud sync:** books, sessions, notes and covers sync across the user's iPhone and iPad through their private iCloud (SwiftData + CloudKit). If the same book ends up on two devices (e.g. one backup imported on both), the copies are merged automatically, keeping every session and note.
 
 **Your data:** your web Reading Tracker backup imports straight in (Settings → Import a backup). The unit tests import your actual 4 books and 40 sessions to prove it.
 
@@ -28,9 +30,12 @@ Outside the app:
    - `APP_DISPLAY_NAME`: the name under the icon (already `Pageturner`)
    - `DEVELOPMENT_TEAM`: your Team ID (Xcode → Settings → Accounts, or developer.apple.com → Membership)
 4. `xcodegen` creates `ReadingTracker.xcodeproj`. Open it.
-5. Choose your iPhone as the run destination and press **Run**. The trial and purchase use the local `ReadingTracker.storekit` file, so nothing is charged while testing.
+5. In Xcode, select the **ReadingTracker** target → **Signing & Capabilities**. Under **iCloud**, make sure the container `iCloud.<your bundle id>` is ticked (if the list is empty, press **+** and add exactly that name, or click the ↻ refresh button). This needs a paid Apple Developer Program membership.
+6. Choose your iPhone as the run destination and press **Run**. The trial and purchase use the local `ReadingTracker.storekit` file, so nothing is charged while testing.
 
 Re-run `xcodegen` whenever files are added or `project.yml` changes.
+
+**Before the first App Store release (iCloud):** open [CloudKit Console](https://icloud.developer.apple.com) → your container → **Deploy Schema Changes…** to copy the data layout from Development to Production. Run the app once from Xcode first (with an iCloud-signed-in device) so the Development schema exists. App Store builds use Production, and sync won't work there until it's deployed. Repeat after any change to the data models.
 
 **If "Start my 3-day free trial" fails while testing from Xcode:**
 - The message now says why. If it mentions **Screen Time**, turn on in-app purchases: iPhone **Settings → Screen Time → Content & Privacy Restrictions → iTunes & App Store Purchases → In-app Purchases → Allow**.
@@ -89,7 +94,7 @@ CI saves screenshots of the sample library on every run (Actions → the run →
   > • Want to read list
   > • Home-screen and lock-screen widgets
   > • Six colour schemes, each with a matching app icon
-  > • Your reading stays on your iPhone. No account, no ads, no tracking.
+  > • Syncs across your iPhone and iPad with iCloud. No account, no ads, no tracking.
   >
   > Try everything free for 3 days, then unlock it forever with one payment. No subscription.
 
@@ -97,7 +102,7 @@ CI saves screenshots of the sample library on every run (Actions → the run →
 
 - **Swift 6** with complete data-race checking. The compiler proves there are no threading bugs.
 - **SwiftUI** (iOS 17+), with iOS 26 **Liquid Glass** on newer phones: the tab bar shrinks while you scroll, plus glass buttons and controls.
-- **SwiftData** for storage; **Swift Charts**; **StoreKit 2** for the trial and purchase.
+- **SwiftData** for storage, synced with **CloudKit** (the user's private iCloud database); **Swift Charts**; **StoreKit 2** for the trial and purchase.
 - **VisionKit** for barcode and quote scanning; **PhotosUI** and the camera for covers.
 - **WidgetKit**, **ActivityKit** (Live Activities) and **App Intents** for widgets and the lock-screen timer.
 - **AVAudioEngine** for the generated stereo Focus sounds.

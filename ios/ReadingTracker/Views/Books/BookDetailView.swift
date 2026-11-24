@@ -14,11 +14,11 @@ struct BookDetailView: View {
     @State private var editing = false
     @State private var askDelete = false
 
-    private var notes: [BookNote] { book.notes.sorted { $0.createdAt.seconds > $1.createdAt.seconds } }
-    private var sessions: [ReadingSession] { book.sessions.sorted { $0.startedAt.seconds > $1.startedAt.seconds } }
+    private var notes: [BookNote] { (book.notes ?? []).sorted { $0.createdAt.seconds > $1.createdAt.seconds } }
+    private var sessions: [ReadingSession] { (book.sessions ?? []).sorted { $0.startedAt.seconds > $1.startedAt.seconds } }
 
     var body: some View {
-        let pace = Stats.pace(book.snap, sessions: book.sessions.map(\.snap), now: .now)
+        let pace = Stats.pace(book.snap, sessions: (book.sessions ?? []).map(\.snap), now: .now)
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(alignment: .top, spacing: 16) {
@@ -136,7 +136,7 @@ struct BookDetailView: View {
     private func progressLine(_ pace: Pace) -> String {
         switch book.status {
         case .finished:
-            let took = Stats.daysTaken(book.snap, sessions: book.sessions.map(\.snap))
+            let took = Stats.daysTaken(book.snap, sessions: (book.sessions ?? []).map(\.snap))
             return "All \(book.totalPages.formatted()) pages read" + (took.map { " · took \($0) \($0 == 1 ? "day" : "days")" } ?? "")
         case .dnf:
             return "Stopped on page \(pace.current) of \(book.totalPages)"

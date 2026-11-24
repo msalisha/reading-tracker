@@ -144,12 +144,12 @@ enum Backup {
                 "startPage": book.startPage, "status": book.statusRaw, "addedAt": iso(book.addedAt), "lastAt": iso(book.lastAt),
                 "finishedDay": book.finishedDay as Any, "dnfDay": book.dnfDay as Any, "dnfNote": book.dnfNote as Any,
                 "rating": book.rating as Any])
-            for x in book.sessions {
+            for x in book.sessions ?? [] {
                 s[x.uid] = compact([
                     "bookId": book.uid, "startedAt": local(x.startedAt), "day": x.day, "startPage": x.startPage,
                     "endPage": x.endPage, "pages": x.pages, "minutes": x.minutes as Any, "createdAt": iso(x.createdAt)])
             }
-            for x in book.notes {
+            for x in book.notes ?? [] {
                 n[x.uid] = compact(["bookId": book.uid, "kind": x.kindRaw, "text": x.text, "page": x.page as Any,
                                     "createdAt": iso(x.createdAt)])
             }
@@ -165,7 +165,7 @@ enum Backup {
         var rows = ["Book,Author,Status,Pages,Rating,Finished,Session started,From page,To page,Pages read,Minutes"]
         for b in books {
             let head = [b.title, b.author, b.statusRaw, String(b.totalPages), b.rating.map { String($0) } ?? "", b.finishedDay ?? ""]
-            let ss = b.sessions.sorted { $0.startedAt.seconds < $1.startedAt.seconds }
+            let ss = (b.sessions ?? []).sorted { $0.startedAt.seconds < $1.startedAt.seconds }
             if ss.isEmpty { rows.append((head + ["", "", "", "", ""]).map(field).joined(separator: ",")) }
             for s in ss {
                 rows.append((head + [local(s.startedAt), String(s.startPage), String(s.endPage), String(s.pages),

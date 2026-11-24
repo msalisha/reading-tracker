@@ -1,18 +1,23 @@
 import Foundation
 import SwiftData
 
+// Every model follows iCloud's rules so the library can sync: no unique constraints, a default for every stored
+// property, and optional to-many relationships. `uid` is still unique in practice: Sync.dedupe merges any copies.
+
 @Model
 final class Book {
-    @Attribute(.unique) var uid: String
-    var title: String
-    var author: String
+    var uid: String = ""
+    /// Identifies this copy of the record, so devices agree which copy to keep if the same book exists twice.
+    var copyID: String = ""
+    var title: String = ""
+    var author: String = ""
     var isbn: String?
-    var totalPages: Int
+    var totalPages: Int = 1
     /// The page you were on when you added the book.
-    var startPage: Int
-    var statusRaw: String
-    var addedAt: Date
-    var lastAt: Date
+    var startPage: Int = 0
+    var statusRaw: String = BookStatus.reading.rawValue
+    var addedAt: Date = Date.now
+    var lastAt: Date = Date.now
     var finishedDay: String?
     var dnfDay: String?
     var dnfNote: String?
@@ -20,13 +25,14 @@ final class Book {
     var rating: Double?
     @Attribute(.externalStorage) var coverData: Data?
 
-    @Relationship(deleteRule: .cascade, inverse: \ReadingSession.book) var sessions: [ReadingSession] = []
-    @Relationship(deleteRule: .cascade, inverse: \BookNote.book) var notes: [BookNote] = []
+    @Relationship(deleteRule: .cascade, inverse: \ReadingSession.book) var sessions: [ReadingSession]? = []
+    @Relationship(deleteRule: .cascade, inverse: \BookNote.book) var notes: [BookNote]? = []
 
     init(uid: String = UUID().uuidString, title: String, author: String = "", isbn: String? = nil,
          totalPages: Int, startPage: Int = 0, status: BookStatus = .reading,
          addedAt: Date = .now, lastAt: Date = .now, coverData: Data? = nil) {
         self.uid = uid
+        self.copyID = UUID().uuidString
         self.title = title
         self.author = author
         self.isbn = isbn
@@ -48,24 +54,26 @@ final class Book {
                  finishedDay: finishedDay, dnfDay: dnfDay, rating: rating, addedAt: addedAt, lastAt: lastAt)
     }
 
-    var currentPage: Int { Stats.currentPage(snap, sessions: sessions.map(\.snap)) }
+    var currentPage: Int { Stats.currentPage(snap, sessions: (sessions ?? []).map(\.snap)) }
 }
 
 @Model
 final class ReadingSession {
-    @Attribute(.unique) var uid: String
+    var uid: String = ""
+    var copyID: String = ""
     var book: Book?
-    var startedAt: Date
-    var day: String
-    var startPage: Int
-    var endPage: Int
-    var pages: Int
+    var startedAt: Date = Date.now
+    var day: String = ""
+    var startPage: Int = 0
+    var endPage: Int = 0
+    var pages: Int = 0
     var minutes: Int?
-    var createdAt: Date
+    var createdAt: Date = Date.now
 
     init(uid: String = UUID().uuidString, book: Book?, startedAt: Date, startPage: Int, endPage: Int,
          minutes: Int?, createdAt: Date = .now, day: String? = nil) {
         self.uid = uid
+        self.copyID = UUID().uuidString
         self.book = book
         self.startedAt = startedAt
         self.day = day ?? Day.key(startedAt)
@@ -91,15 +99,17 @@ final class BookNote {
         var icon: String { self == .quote ? "quote.opening" : "lightbulb" }
     }
 
-    @Attribute(.unique) var uid: String
+    var uid: String = ""
+    var copyID: String = ""
     var book: Book?
-    var kindRaw: String
-    var text: String
+    var kindRaw: String = Kind.thought.rawValue
+    var text: String = ""
     var page: Int?
-    var createdAt: Date
+    var createdAt: Date = Date.now
 
     init(uid: String = UUID().uuidString, book: Book?, kind: Kind, text: String, page: Int? = nil, createdAt: Date = .now) {
         self.uid = uid
+        self.copyID = UUID().uuidString
         self.book = book
         self.kindRaw = kind.rawValue
         self.text = text
@@ -115,20 +125,47 @@ final class BookNote {
 
 enum Persistence {
     nonisolated(unsafe) static let schema = Schema([Book.self, ReadingSession.self, BookNote.self])
+    /// The iCloud container the library syncs with, or nil when this build has no iCloud entitlement (e.g. CI).
+    nonisolated(unsafe) static private(set) var cloudContainerID: String?
 
     static func makeContainer(inMemory: Bool = false) -> ModelContainer {
-        let config: ModelConfiguration
         if inMemory {
-            config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        } else if let dir = AppGroup.containerURL {
-            config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("Library.store"))
-        } else {
-            config = ModelConfiguration(schema: schema)
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+            do { return try ModelContainer(for: schema, configurations: [config]) } catch {
+                fatalError("Couldn't open the library: \(error)")
+            }
         }
+        let url = AppGroup.containerURL?.appendingPathComponent("Library.store")
+        func config(_ db: ModelConfiguration.CloudKitDatabase) -> ModelConfiguration {
+            if let url { return ModelConfiguration(schema: schema, url: url, cloudKitDatabase: db) }
+            return ModelConfiguration(schema: schema, cloudKitDatabase: db)
+        }
+        prepareForSync(config(.none))
+        // .automatic syncs with the iCloud container in the app's entitlements, and stays on-device when there is none.
+        let cloud = config(.automatic)
         do {
-            return try ModelContainer(for: schema, configurations: [config])
+            let container = try ModelContainer(for: schema, configurations: [cloud])
+            cloudContainerID = cloud.cloudKitContainerIdentifier
+            return container
         } catch {
+            print("iCloud sync unavailable, using on-device storage: \(error)")
+        }
+        do { return try ModelContainer(for: schema, configurations: [config(.none)]) } catch {
             fatalError("Couldn't open the library: \(error)")
         }
+    }
+
+    /// Once, before the library first syncs: give every existing record its own copy ID while it is still only on
+    /// this device, so the first upload already carries it and every device makes the same choice when merging.
+    private static func prepareForSync(_ local: ModelConfiguration) {
+        let key = "syncPrepared.v1"
+        guard !AppGroup.defaults.bool(forKey: key) else { return }
+        autoreleasepool {
+            if let container = try? ModelContainer(for: schema, configurations: [local]) {
+                let ctx = ModelContext(container)
+                Sync.assignCopyIDs(ctx)
+            }
+        }
+        AppGroup.defaults.set(true, forKey: key)
     }
 }

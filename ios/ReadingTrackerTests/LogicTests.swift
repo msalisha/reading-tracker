@@ -410,5 +410,65 @@ import AVFoundation
     }
 }
 
+@MainActor
+@Suite struct SyncTests {
+    /// Two copies of the same book, as when one backup is imported on two devices before they sync.
+    private func twoCopies(_ ctx: ModelContext) -> (Book, Book) {
+        let a = Book(uid: "b1", title: "Middlemarch", author: "George Eliot", totalPages: 880)
+        let b = Book(uid: "b1", title: "Middlemarch", author: "George Eliot", totalPages: 880)
+        a.copyID = "B"; b.copyID = "A"
+        b.rating = 4.5
+        ctx.insert(a); ctx.insert(b)
+        let shared = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        for (book, id) in [(a, "x"), (b, "x"), (b, "y")] {   // session "x" exists on both, "y" only on one
+            let s = ReadingSession(uid: "s-\(id)", book: book, startedAt: shared, startPage: 0, endPage: 20, minutes: 30)
+            s.copyID = book.copyID + id
+            ctx.insert(s)
+        }
+        let n = BookNote(uid: "n1", book: a, kind: .quote, text: "It is never too late.")
+        ctx.insert(n)
+        try? ctx.save()
+        return (a, b)
+    }
+
+    @Test func mergesCopiesOfABookKeepingEverything() throws {
+        let container = Persistence.makeContainer(inMemory: true) // keep the store alive for the whole test
+        let ctx = container.mainContext
+        _ = twoCopies(ctx)
+        #expect(Sync.dedupe(ctx) == 2)   // one book copy and one session copy
+        let books = try ctx.fetch(FetchDescriptor<Book>())
+        #expect(books.count == 1)
+        let kept = try #require(books.first)
+        #expect(kept.copyID == "A")                    // every device keeps the smallest copy ID
+        #expect(kept.rating == 4.5)
+        #expect(Set((kept.sessions ?? []).map(\.uid)) == ["s-x", "s-y"])
+        #expect((kept.notes ?? []).map(\.text) == ["It is never too late."])
+        #expect(try ctx.fetch(FetchDescriptor<ReadingSession>()).count == 2)
+        #expect(Sync.dedupe(ctx) == 0)   // nothing left to do
+    }
+
+    @Test func waitsUntilEveryCopyHasACopyID() throws {
+        let container = Persistence.makeContainer(inMemory: true)
+        let ctx = container.mainContext
+        let (a, _) = twoCopies(ctx)
+        a.copyID = ""
+        try ctx.save()
+        #expect(Sync.dedupe(ctx) == 0)
+        #expect(try ctx.fetch(FetchDescriptor<Book>()).count == 2)
+        #expect(Sync.assignCopyIDs(ctx) == 1)
+        #expect(!a.copyID.isEmpty)
+        Sync.dedupe(ctx)
+        #expect(try ctx.fetch(FetchDescriptor<Book>()).count == 1)
+    }
+
+    @Test func newRecordsGetTheirOwnCopyID() {
+        let a = Book(title: "A", totalPages: 10), b = Book(title: "B", totalPages: 10)
+        #expect(!a.copyID.isEmpty && a.copyID != b.copyID)
+        let s = ReadingSession(book: nil, startedAt: .now, startPage: 0, endPage: 1, minutes: nil)
+        #expect(!s.copyID.isEmpty)
+        #expect(!BookNote(book: nil, kind: .thought, text: "hi").copyID.isEmpty)
+    }
+}
+
 /// Finds this test bundle (Swift Testing suites are structs, so they can't be used with Bundle(for:)).
 private final class BundleToken {}

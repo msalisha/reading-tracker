@@ -56,7 +56,7 @@ targets:
         NSCameraUsageDescription: Scan book barcodes and capture quotes from pages.
         NSPhotoLibraryAddUsageDescription: Save quote cards and reading recaps to your photos.
         NSSupportsLiveActivities: true
-        UIBackgroundModes: [audio]
+        UIBackgroundModes: [audio, remote-notification]
         ITSAppUsesNonExemptEncryption: false
         CFBundleURLTypes:
           - CFBundleURLName: pageturner
@@ -65,6 +65,10 @@ targets:
       path: ReadingTracker/ReadingTracker.entitlements
       properties:
         com.apple.security.application-groups: [$(APP_GROUP)]
+        # iCloud sync of the library (SwiftData + CloudKit, the user's private database)
+        com.apple.developer.icloud-container-identifiers: [iCloud.$(APP_BUNDLE_ID)]
+        com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
     dependencies:
       - target: ReadingWidgets
 
