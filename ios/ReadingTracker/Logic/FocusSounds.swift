@@ -5,7 +5,7 @@ import Observation
 /// Background sounds while you read. Generated live on the phone (no recordings), so they never loop,
 /// cost nothing in app size, and have no licensing to worry about.
 enum FocusSound: String, CaseIterable, Identifiable {
-    case off, rain, cafe, fireplace, beach
+    case off, rain, cafe, fireplace, beach, whiteNoise
 
     var id: String { rawValue }
 
@@ -16,6 +16,7 @@ enum FocusSound: String, CaseIterable, Identifiable {
         case .cafe: return "Café"
         case .fireplace: return "Fire"
         case .beach: return "Beach"
+        case .whiteNoise: return "Noise"
         }
     }
 
@@ -26,6 +27,7 @@ enum FocusSound: String, CaseIterable, Identifiable {
         case .cafe: return "cup.and.saucer"
         case .fireplace: return "flame"
         case .beach: return "beach.umbrella"
+        case .whiteNoise: return "waveform"
         }
     }
 }
@@ -117,6 +119,7 @@ final class FocusSoundPlayer {
         case .fireplace: reverb.loadFactoryPreset(.smallRoom); reverb.wetDryMix = 14
         case .rain: reverb.loadFactoryPreset(.largeRoom); reverb.wetDryMix = 10
         case .beach: reverb.loadFactoryPreset(.largeHall); reverb.wetDryMix = 6
+        case .whiteNoise: reverb.wetDryMix = 0
         case .off: reverb.wetDryMix = 0
         }
     }

@@ -234,7 +234,7 @@ import StoreKit
     }
 
     @Test func testEachSoundIsAudibleAndSafe() {
-        for sound in [FocusSound.rain, .cafe, .fireplace, .beach] {
+        for sound in [FocusSound.rain, .cafe, .fireplace, .beach, .whiteNoise] {
             let s = stats(sound)
             #expect(s.finite, "\(sound) produced an invalid sample")
             #expect(s.peak <= 1, "\(sound) clips")
@@ -245,7 +245,7 @@ import StoreKit
     }
 
     @Test func testSoundsAreStereo() {
-        for sound in [FocusSound.rain, .cafe, .fireplace, .beach] {
+        for sound in [FocusSound.rain, .cafe, .fireplace, .beach, .whiteNoise] {
             let synth = SoundSynth(sampleRate: 44_100)
             synth.sound = sound
             var diff: Float = 0

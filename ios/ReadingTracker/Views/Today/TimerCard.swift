@@ -236,13 +236,13 @@ struct FocusSoundBar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 ForEach(FocusSound.allCases) { s in
                     let on = player.sound == s
                     Button { player.setSound(s) } label: {
                         VStack(spacing: 2) {
                             Image(systemName: s.icon).font(.subheadline.weight(.semibold))
-                            Text(s.title).font(.caption2.weight(.bold))
+                            Text(s.title).font(.caption2.weight(.bold)).lineLimit(1).minimumScaleFactor(0.7)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 7)

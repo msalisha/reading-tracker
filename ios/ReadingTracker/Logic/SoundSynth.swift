@@ -481,18 +481,36 @@ final class BeachSound {
     }
 }
 
+// MARK: - White noise
+
+/// Steady white noise for focus: independent in each ear, with the harshest top end gently softened.
+final class WhiteNoiseSound {
+    private var nL = Noise(51), nR = Noise(52)
+    private var softL = Biquad(), softR = Biquad()
+
+    init(sampleRate: Double) {
+        softL.lowpass(9000, q: 0.6, sr: sampleRate)
+        softR.lowpass(9000, q: 0.6, sr: sampleRate)
+    }
+
+    func next() -> (Float, Float) {
+        (softL.process(nL.white()) * 0.22, softR.process(nR.white()) * 0.22)
+    }
+}
+
 // MARK: - The mixer the player uses
 
 /// Generates the chosen sound, one stereo sample at a time, gently limited so it never distorts.
 final class SoundSynth: @unchecked Sendable { // used only by the audio thread once playing
     var sound: FocusSound = .off
-    private let rain: RainSound, fire: FireSound, cafe: CafeSound, beach: BeachSound
+    private let rain: RainSound, fire: FireSound, cafe: CafeSound, beach: BeachSound, white: WhiteNoiseSound
 
     init(sampleRate: Double) {
         rain = RainSound(sampleRate: sampleRate)
         fire = FireSound(sampleRate: sampleRate)
         cafe = CafeSound(sampleRate: sampleRate)
         beach = BeachSound(sampleRate: sampleRate)
+        white = WhiteNoiseSound(sampleRate: sampleRate)
     }
 
     func nextStereo() -> (Float, Float) {
@@ -503,6 +521,7 @@ final class SoundSynth: @unchecked Sendable { // used only by the audio thread o
         case .fireplace: s = fire.next()
         case .cafe: s = cafe.next()
         case .beach: s = beach.next()
+        case .whiteNoise: s = white.next()
         }
         return (tanh(s.0), tanh(s.1))
     }
