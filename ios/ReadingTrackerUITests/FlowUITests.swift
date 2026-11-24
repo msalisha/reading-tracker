@@ -154,44 +154,45 @@ final class FlowUITests: XCTestCase {
         shot(app, "05-log")
     }
 
-    /// The App Store set: six screens in story order, saved to AppStore/ (CI uploads them as "app-store-screenshots").
+    /// The App Store set, strongest screens first, saved to AppStore/ (CI uploads them as "app-store-screenshots").
     func testAppStoreScreenshots() {
         var app = launch(["-uitest-sample"])
-        // 1. The timer running, with a Focus sound on
+        // 1. Today, with the timer running and a Focus sound on
         XCTAssertTrue(app.buttons["sound-rain"].waitForExistence(timeout: 5))
         app.buttons["sound-rain"].tap()
         app.buttons["timerStart"].tap()
         XCTAssertTrue(app.buttons["timerPause"].waitForExistence(timeout: 5))
         sleep(3)
-        shot(app, "AppStore/1-timer")
-        // 2. The library
+        app.swipeDown()
+        shot(app, "AppStore/1-today")
+        // 4. The library, 5. a book page, 2. a quote card
         tab(app, "Books")
-        shot(app, "AppStore/2-books")
-        // 3. A book page with rating, progress and notes
+        shot(app, "AppStore/4-books")
         element(app, "Pride and Prejudice").tap()
         XCTAssertTrue(app.buttons["addThought"].waitForExistence(timeout: 5))
-        shot(app, "AppStore/3-book")
-        // 4. A quote shared as a picture
+        shot(app, "AppStore/5-book")
         let share = app.buttons["shareCard"].firstMatch
         XCTAssertTrue(share.waitForExistence(timeout: 5))
         share.tap()
         XCTAssertTrue(app.buttons["cardShare"].waitForExistence(timeout: 5))
-        if app.buttons["Story"].exists { app.buttons["Story"].tap() }
         if app.buttons["style-Collage"].exists { app.buttons["style-Collage"].tap() }
-        shot(app, "AppStore/4-quote-card")
-        // 5. Stats, from a fresh start
+        shot(app, "AppStore/2-quote-card")
+        // 6. Stats and 3. the monthly recap, from a fresh start
         app.terminate()
         app = launch(["-uitest-sample"])
         tab(app, "Stats")
         sleep(1)
-        shot(app, "AppStore/5-stats")
-        // 6. The monthly recap
+        shot(app, "AppStore/6-stats")
         XCTAssertTrue(app.buttons["recapMonth"].waitForExistence(timeout: 5))
         app.buttons["recapMonth"].tap()
         XCTAssertTrue(app.buttons["recapShare"].waitForExistence(timeout: 5))
-        app.descendants(matching: .any)["recapSlides"].swipeLeft()
         sleep(1)
-        shot(app, "AppStore/6-recap")
+        shot(app, "AppStore/3-recap")
+        // 7. The welcome screen
+        app.terminate()
+        app = launch(access: "none")
+        XCTAssertTrue(app.buttons["startTrial"].waitForExistence(timeout: 5))
+        shot(app, "AppStore/7-welcome")
     }
 
     func testExpiredTrialIsReadOnly() {

@@ -1,12 +1,14 @@
 import SwiftUI
 
 private let features: [(String, String)] = [
-    ("timer", "Reading timer on your lock screen"),
-    ("barcode.viewfinder", "Scan a book's barcode to add it"),
-    ("quote.opening", "Notes, quotes and star ratings"),
-    ("chart.bar.fill", "Streaks, pace and monthly stats"),
-    ("square.grid.2x2", "Home-screen widgets"),
-    ("paintpalette", "Six colour schemes"),
+    ("timer", "Lock-screen timer"),
+    ("cloud.rain", "Focus sounds"),
+    ("quote.opening", "Quotes and cards"),
+    ("sparkles", "Monthly recap"),
+    ("headphones", "Audiobooks"),
+    ("books.vertical", "Goodreads import"),
+    ("icloud", "iCloud sync"),
+    ("square.grid.2x2", "Widgets and themes"),
 ]
 
 /// Shown when the trial has ended (or from "Unlock"): one payment, no subscription.
@@ -17,9 +19,10 @@ struct PaywallView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 20) {
+                PaywallHero(badge: "ONE\nPAYMENT").padding(.top, 34)
                 Text(headline).font(.system(.largeTitle, design: .rounded, weight: .black))
-                Text("One payment unlocks everything, for good. No subscription, no ads, and your reading stays on your phone.")
+                Text("One payment unlocks everything, for good. No subscription, no ads, no tracking.")
                     .foregroundStyle(.secondary)
                 FeatureList()
                 if store.access == .noTrial {
@@ -40,6 +43,8 @@ struct PaywallView: View {
                 .buttonStyle(PillButton(kind: .brand, big: true))
                 .disabled(store.busy || store.access == .unlocked)
                 .accessibilityIdentifier("buyUnlock")
+                Text("One payment · no subscription · yours forever")
+                    .font(.footnote.weight(.semibold)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
                 Button("Restore purchase") { Task { await store.restore(); if store.access == .unlocked { dismiss() } } }
                     .frame(maxWidth: .infinity)
                     .disabled(store.busy)
@@ -73,15 +78,71 @@ struct PaywallView: View {
     }
 }
 
+/// What you get, as a grid of small tiles.
 struct FeatureList: View {
     @Environment(\.theme) private var theme
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
             ForEach(features, id: \.1) { feature in
-                Label { Text(feature.1) } icon: { Image(systemName: feature.0).foregroundStyle(theme.brandText).frame(width: 28) }
+                HStack(spacing: 10) {
+                    Image(systemName: feature.0).font(.subheadline.weight(.bold)).foregroundStyle(theme.onBrand)
+                        .frame(width: 32, height: 32).background(theme.brand, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    Text(feature.1).font(.subheadline.weight(.semibold)).lineLimit(2).minimumScaleFactor(0.8)
+                    Spacer(minLength: 0)
+                }
+                .padding(10)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .accessibilityElement(children: .combine)
             }
         }
-        .font(.body.weight(.medium))
+    }
+}
+
+/// The picture at the top of the welcome and unlock screens: a fan of books on a block of colour, with a sticker.
+struct PaywallHero: View {
+    let badge: String
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 30, style: .continuous).fill(theme.brand)
+            Circle().fill(theme.highlight).frame(width: 220, height: 220).offset(x: -150, y: 90)
+            Burst(points: 4, inner: 0.3).fill(theme.onBrand).frame(width: 26, height: 26).offset(x: -120, y: -62)
+            HStack(spacing: -22) {
+                book("Jane Eyre", tilt: -10).offset(y: 10)
+                book("Pride and Prejudice", tilt: 0).zIndex(1)
+                book("Emma", tilt: 10).offset(y: 10)
+            }
+            .offset(x: -6, y: 8)
+            ZStack {
+                Burst(points: 10, inner: 0.78).fill(theme.highlight)
+                Text(badge).font(.system(size: 12, weight: .black)).multilineTextAlignment(.center)
+                    .foregroundStyle(theme.onHighlight).padding(10)
+            }
+            .frame(width: 86, height: 86)
+            .rotationEffect(.degrees(12))
+            .offset(x: 118, y: -52)
+        }
+        .frame(height: 200)
+        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .accessibilityHidden(true)
+    }
+
+    private func book(_ title: String, tilt: Double) -> some View {
+        ZStack(alignment: .topLeading) {
+            LinearGradient(colors: [Color(hex: 0x111113), Color(hex: 0x2C2C33)], startPoint: .top, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 6) {
+                Rectangle().fill(theme.highlight).frame(width: 26, height: 3)
+                Text(title).font(.system(size: 12, weight: .bold, design: .serif)).foregroundStyle(.white)
+            }
+            .padding(10)
+        }
+        .frame(width: 84, height: 126)
+        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+        .padding(4)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .shadow(color: .black.opacity(0.3), radius: 8, y: 5)
+        .rotationEffect(.degrees(tilt))
     }
 }
 
@@ -94,15 +155,10 @@ struct WelcomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                HStack(spacing: 6) {
-                    Capsule().fill(theme.brand).frame(width: 56, height: 8)
-                    Capsule().fill(theme.highlight).frame(width: 36, height: 8)
-                    Capsule().fill(theme.brandText).frame(width: 20, height: 8)
-                }
-                .padding(.top, 40)
+            VStack(alignment: .leading, spacing: 20) {
+                PaywallHero(badge: "3 DAYS\nFREE").padding(.top, 8)
                 Text("Track every page you read").font(.system(.largeTitle, design: .rounded, weight: .black))
-                Text("Time your reading, log your pages, keep quotes and thoughts, and watch your streak grow.")
+                Text("Time your reading, keep your favourite quotes, and watch your streak grow. Books and audiobooks.")
                     .foregroundStyle(.secondary)
                 FeatureList()
                 Button {

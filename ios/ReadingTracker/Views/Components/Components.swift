@@ -72,6 +72,32 @@ struct ProgressBar: View {
     }
 }
 
+/// A switch made of pills in the theme's colours, readable on the dark boards.
+struct PillSwitch<Value: Hashable>: View {
+    let options: [(Value, String)]
+    @Binding var selection: Value
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(Array(options.enumerated()), id: \.offset) { _, option in
+                let on = option.0 == selection
+                Button {
+                    withAnimation(.snappy) { selection = option.0 }
+                    Haptics.tap()
+                } label: {
+                    Text(option.1).font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity).padding(.vertical, 8)
+                        .foregroundStyle(on ? theme.onHighlight : theme.boardText.opacity(0.75))
+                        .background(on ? theme.highlight : Color.white.opacity(0.1), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+    }
+}
+
 /// A small ring with the percentage inside.
 struct ProgressRing: View {
     let fraction: Double

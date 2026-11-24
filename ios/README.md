@@ -7,11 +7,11 @@
 | Tab | What you can do |
 |---|---|
 | **Today** | Scores (today, streak, week, month, books finished), the reading timer (choose a book, set the starting page, start, pause, Done, log the page you got to) with optional **Focus sounds** (rain, café or fireplace, keeps playing with the screen locked), log a session by hand, books on the go |
-| **Books** | On the go (progress, pace, reading line, timer with pause/resume), **Want to read**, the shelf (finished and written off). **Add a book** by scanning its barcode (finds the title, author, pages and **cover**) or typing it |
-| **Book page** | Cover (tap it to use the ISBN's cover, **search Google Images** inside the app, choose from Photos or take a photo), progress, **star rating** (optional, half stars), **notes**: quotes and thoughts with an optional page number, **scan a quote from the page** with the camera, **share any quote as a picture** (square or story size, in any colour scheme), copy, edit details |
+| **Books** | On the go (progress, pace, reading line, timer with pause/resume), **Want to read**, the shelf (finished and written off). **Add a book** by scanning its barcode (finds the title, author, pages and **cover**) or typing it. **Audiobooks** too: length and position in hours and minutes, with listening time counted separately from pages |
+| **Book page** | Cover (tap it to use the ISBN's cover, **search Google Images** inside the app, choose from Photos or take a photo), progress, **star rating** (optional, half stars), **notes**: quotes and thoughts with an optional page number, **scan a quote from the page** with the camera, **share any quote as a picture** in six styles (Poster, Collage, Dreamy, Highlighter, Editorial, Bookmark), three sizes and any colour scheme, copy, edit details |
 | **Stats** | **Monthly recap** and **Year in review** (story-style pages you can swipe and share as pictures), finished this month (spines and calendar), pages by day, week or month, your average day, books per month and average rating |
 | **Log** | Every session by day (swipe to delete), plus **search across all your notes** |
-| **Settings** | **6 colour schemes** (the app icon changes to match), light/dark, purchase and Restore, **iCloud sync** status, import and export a backup (JSON), spreadsheet export (CSV) |
+| **Settings** | **6 colour schemes** (the app icon changes to match), light/dark, purchase and Restore, **iCloud sync** status, import and export a backup (JSON), **import from Goodreads**, spreadsheet export (CSV) |
 
 Outside the app:
 - **Lock screen and Dynamic Island:** the timer, with Pause and Resume buttons.
@@ -80,18 +80,18 @@ Re-run `xcodegen` whenever files are added or `project.yml` changes.
 3. Check on a real device: barcode and quote scanning, the lock-screen timer and Dynamic Island, widgets, Focus sounds with the screen locked, iCloud sync to a second device, starting the trial and buying the unlock (free in TestFlight).
 
 ### 3. The version page, then submit
-1. **Screenshots:** every CI run uploads a ready-made set as the **app-store-screenshots** artifact (GitHub → Actions → the latest "iOS app" run → Artifacts). They're taken on the largest iPhone (6.9", 1320 × 2868) with a tidy 9:41 status bar, which is the size App Store Connect asks for: timer with Focus sounds, library, book page, quote card, stats, monthly recap.
+1. **Screenshots:** every CI run uploads a ready-made set as the **app-store-screenshots** artifact (GitHub → Actions → the latest "iOS app" run → Artifacts). They're taken on the largest iPhone (6.9", 1320 × 2868) with a tidy 9:41 status bar, which is the size App Store Connect asks for: Today with the timer, a quote card, the monthly recap, the library, a book page, stats, plus the welcome screen.
 2. Paste the text below, select the build, and attach **both in-app purchases** to the version (they're reviewed together with the first version).
 3. Paste the review notes, then **Submit for Review**. Review usually takes 1–3 days. If something is rejected, Apple explains why in App Store Connect.
 4. Choose whether to release automatically once approved, or manually.
 
 ### Notes for the App Review team (paste into "Notes")
-> This app is a free download with a 3-day free trial, then a one-off non-consumable purchase ("Unlock forever"). Following guideline 3.1.1, the trial is a free non-consumable in-app purchase named "3-Day Free Trial", started from the welcome screen; "Look around first" lets you browse without starting it. After 3 days, all previously entered data stays visible and exportable (read-only); adding or logging shows the unlock screen. "Restore purchases" is in Settings. The camera is used only for barcode and quote scanning, processed on-device. Library data syncs through the user's own private iCloud database (can be switched off in Settings). Cover search opens Google Images in an in-app browser; nothing is sent except the search terms. No account or login is needed.
+> This app is a free download with a 3-day free trial, then a one-off non-consumable purchase ("Unlock forever"). Following guideline 3.1.1, the trial is a free non-consumable in-app purchase named "3-Day Free Trial", started from the welcome screen; "Look around first" lets you browse without starting it. After 3 days, all previously entered data stays visible and exportable (read-only); adding or logging shows the unlock screen. "Restore purchases" is in Settings. The camera is used only for barcode and quote scanning, processed on-device. Library data syncs through the user's own private iCloud database (can be switched off in Settings). Cover search opens Google Images in an in-app browser; nothing is sent except the search terms. "Import from Goodreads" reads a CSV file the user exports from Goodreads themselves; it is processed on-device and the app never contacts Goodreads. No account or login is needed.
 
 ### Suggested App Store text
 - **Subtitle (30 chars):** Reading timer, notes & stats
-- **Keywords (100 chars):** reading tracker,book log,reading timer,pages,streak,quotes,bookshelf,book journal,focus,recap
-- **Promotional text:** Time your reading on the lock screen with rain or café sounds, keep your favourite quotes, and get a monthly recap of every page.
+- **Keywords (100 chars):** reading tracker,book log,reading timer,audiobook,goodreads,streak,quotes,book journal,recap
+- **Promotional text:** Time your reading and listening, turn favourite quotes into beautiful cards, and get a monthly recap. Bring your Goodreads library with you.
 - **Description:**
   > Track every page you read.
   >
@@ -99,7 +99,9 @@ Re-run `xcodegen` whenever files are added or `project.yml` changes.
   > • Focus sounds while you read: rain, café, fireplace, beach or soft noise
   > • Scan a book's barcode to add it with its cover, or find any cover with Google Images
   > • Keep quotes and thoughts for every book, and scan a quote straight from the page
-  > • Share quotes as beautiful pictures for your stories
+  > • Share quotes as beautiful cards in six styles, sized for stories and posts
+  > • Audiobooks too: track listening time alongside pages
+  > • Import your library from Goodreads, with ratings and reviews
   > • Rate the books you finish, and keep a Want to read list
   > • Streaks, pages a day, pace, and how long until you finish
   > • A monthly recap and a Year in review you can swipe through and share

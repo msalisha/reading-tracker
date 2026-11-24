@@ -51,24 +51,47 @@ struct LogView: View {
                 .listRowBackground(Color.clear)
         }
         ForEach(groups, id: \.key) { group in
-            Section(Day.long(group.key)) {
+            Section {
                 ForEach(group.value) { s in
-                    HStack {
+                    HStack(spacing: 12) {
+                        CoverView(data: s.book?.coverData, title: s.book?.title ?? "?", width: 30)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(s.book?.title ?? "Deleted book").font(.subheadline.weight(.semibold))
+                            HStack(spacing: 5) {
+                                if s.book?.isAudio ?? false { Image(systemName: "headphones").font(.caption.weight(.bold)).foregroundStyle(theme.brandText) }
+                                Text(s.book?.title ?? "Deleted book").font(.subheadline.weight(.semibold)).lineLimit(1)
+                            }
                             Text(s.startedAt.formatted(date: .omitted, time: .shortened) + " · " + s.snap.rangeText
                                  + (s.minutes.map { " · \($0) min" } ?? ""))
                                 .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
                         }
                         Spacer()
-                        Text(s.snap.gainText).font(.system(.headline, design: .rounded, weight: .black)).foregroundStyle(theme.brandText)
+                        Text(s.snap.gainText).font(.system(.subheadline, design: .rounded, weight: .black))
+                            .foregroundStyle(theme.brandText)
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(theme.brandText.opacity(0.12), in: Capsule())
                     }
                     .swipeActions {
                         Button("Delete", role: .destructive) { Library.delete(ctx, s) }
                     }
                 }
+            } header: {
+                HStack {
+                    Text(Day.long(group.key))
+                    Spacer()
+                    Text(dayTotal(group.value)).monospacedDigit()
+                }
             }
         }
+    }
+
+    /// "19 pages · 45 min listened" for one day's sessions.
+    private func dayTotal(_ list: [ReadingSession]) -> String {
+        let pages = list.filter { !($0.book?.isAudio ?? false) }.reduce(0) { $0 + $1.pages }
+        let listened = list.filter { $0.book?.isAudio ?? false }.reduce(0) { $0 + $1.pages }
+        var parts: [String] = []
+        if pages > 0 { parts.append("\(pages) \(pages == 1 ? "page" : "pages")") }
+        if listened > 0 { parts.append("\(Stats.formatMinutes(Double(listened))) listened") }
+        return parts.joined(separator: " · ")
     }
 
     @ViewBuilder private var noteRows: some View {

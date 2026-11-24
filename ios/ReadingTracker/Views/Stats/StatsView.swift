@@ -18,6 +18,7 @@ struct StatsView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     recapButtons(now)
+                    totals(bs, ss)
                     MonthBoard(summary: Stats.month(books: bs, sessions: ss, now: now),
                                reading: books.filter { $0.status == .reading }.map { ($0.snap, Stats.pace($0.snap, sessions: ss, now: now).fraction) },
                                now: now)
@@ -64,6 +65,32 @@ struct StatsView: View {
 
     private var range: ChartRange { ChartRange(rawValue: rangeRaw) ?? .day }
 
+    /// All-time numbers as a row of tiles.
+    private func totals(_ bs: [BookSnap], _ ss: [SessionSnap]) -> some View {
+        let pages = ss.filter { !$0.isAudio }.reduce(0) { $0 + max(0, $1.pages) }
+        let minutes = ss.compactMap(\.minutes).reduce(0, +)
+        let finished = bs.filter { $0.status == .finished }
+        let rating = Stats.averageRating(finished)
+        return HStack(spacing: 8) {
+            totalTile(pages.formatted(), "pages", "book.fill")
+            totalTile(minutes >= 60 ? "\(minutes / 60)" : "\(minutes)", minutes >= 60 ? "hours" : "minutes", "clock.fill")
+            totalTile("\(finished.count)", finished.count == 1 ? "book" : "books", "checkmark.seal.fill")
+            totalTile(rating.map { String(format: "%.1f", $0) } ?? "–", "avg rating", "star.fill")
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func totalTile(_ value: String, _ label: String, _ icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Image(systemName: icon).font(.caption.weight(.bold)).foregroundStyle(theme.brandText)
+            BigNumber(text: value, size: 24)
+            Text(label).font(.caption2.weight(.semibold)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
     private func board<Content: View>(_ title: String, _ sub: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
@@ -82,24 +109,20 @@ struct StatsView: View {
         let bars = Stats.pageBars(range, sessions: ss, now: now, audio: audio)
         return board(audio ? "Time listened" : "Pages read", Stats.pageBarsSummary(range, bars: bars, audio: audio)) {
             if hasAudio {
-                Picker("Show", selection: $audioChart) {
-                    Label("Pages", systemImage: "book").tag(false)
-                    Label("Listening", systemImage: "headphones").tag(true)
-                }
-                .pickerStyle(.segmented)
-                .accessibilityIdentifier("statsAudio")
+                PillSwitch(options: [(false, "Pages"), (true, "Listening")], selection: $audioChart)
+                    .accessibilityIdentifier("statsAudio")
             }
-            Picker("Group by", selection: $rangeRaw) {
-                ForEach(ChartRange.allCases) { Text($0.title).tag($0.rawValue) }
-            }
-            .pickerStyle(.segmented)
+            PillSwitch(options: ChartRange.allCases.map { ($0.rawValue, $0.title) }, selection: $rangeRaw)
+            // Label every second bar when there are many, counting back from the newest, so labels never collide.
+            let step = bars.count > 9 ? 2 : 1
+            let labelled = bars.enumerated().filter { (bars.count - 1 - $0.offset) % step == 0 }.map(\.element.label)
             Chart(bars) { b in
                 BarMark(x: .value("When", b.label), y: .value(audio ? "Minutes" : "Pages", b.value))
                     .foregroundStyle(b.isCurrent ? theme.highlight : theme.brand)
-                    .cornerRadius(4)
+                    .cornerRadius(6)
                     .accessibilityLabel(b.detail)
             }
-            .chartXAxis { AxisMarks { _ in AxisValueLabel().foregroundStyle(theme.boardMuted) } }
+            .chartXAxis { AxisMarks(values: labelled) { _ in AxisValueLabel().font(.caption2).foregroundStyle(theme.boardMuted) } }
             .chartYAxis { AxisMarks { _ in
                 AxisGridLine().foregroundStyle(theme.boardGrid)
                 AxisValueLabel().foregroundStyle(theme.boardMuted)
@@ -113,12 +136,7 @@ struct StatsView: View {
         let sub = avg.pagesPerHour.map { "About \(Int($0.rounded())) pages an hour, from your timed sessions" }
             ?? "Last \(avgDays) days. Use the timer to see your pace"
         return board("Your average day", sub) {
-            Picker("Average over", selection: $avgDays) {
-                Text("7 days").tag(7)
-                Text("30 days").tag(30)
-                Text("90 days").tag(90)
-            }
-            .pickerStyle(.segmented)
+            PillSwitch(options: [(7, "7 days"), (30, "30 days"), (90, "90 days")], selection: $avgDays)
             HStack(alignment: .top) {
                 stat("Time a day", avg.avgMinutes >= 60 ? Stats.formatMinutes(avg.avgMinutes) : "\(Int(avg.avgMinutes.rounded()))",
                      avg.timedDays > 0 ? (avg.avgMinutes >= 60 ? "" : "minutes · ") + "\(avg.timedDays) timed days" : "time a session to see this",

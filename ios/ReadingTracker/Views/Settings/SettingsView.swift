@@ -69,7 +69,9 @@ struct SettingsView: View {
                             .foregroundStyle(theme.brandText)
                             .accessibilityIdentifier("importResult")
                     }
-                    Button("Import a backup") { message = nil; importing = true }
+                    Button { message = nil; importing = true } label: {
+                        Label("Import a backup", systemImage: "arrow.down.doc")
+                    }
                     Button {
                         if store.access.canEdit { showGoodreads = true } else { router.showPaywall = true }
                     } label: {
@@ -82,6 +84,13 @@ struct SettingsView: View {
                             Text(enricher.progressText).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
                         }
                     }
+                } header: {
+                    Text("Bring data in")
+                } footer: {
+                    Text("Backups from Pageturner or the web Reading Tracker (Log → Save a backup), or your Goodreads library.")
+                }
+
+                Section {
                     if let exportFile {
                         ShareLink(item: exportFile) { Label("Save a backup", systemImage: "square.and.arrow.up") }
                     }
@@ -89,14 +98,20 @@ struct SettingsView: View {
                         ShareLink(item: csvFile) { Label("Export as spreadsheet (CSV)", systemImage: "tablecells") }
                     }
                 } header: {
-                    Text("Your data")
+                    Text("Take data out")
                 } footer: {
-                    Text("\(sync == .on ? "Your library" : "Stored on this iPhone"): \(books.count) books and \(sessions.count) sessions. Import a backup from Pageturner or the web Reading Tracker (Log → Save a backup) to bring your history across.")
+                    Text("\(sync == .on ? "Your library" : "Stored on this iPhone"): \(books.count) books and \(sessions.count) sessions.")
                 }
 
-                Section("About") {
-                    Link("Privacy policy", destination: Links.privacy)
-                    Link("Help and support", destination: Links.support)
+                Section {
+                    Link(destination: Links.privacy) { Label("Privacy policy", systemImage: "hand.raised") }
+                    Link(destination: Links.support) { Label("Help and support", systemImage: "questionmark.circle") }
+                    Label("New: audiobooks, Goodreads import, six card styles", systemImage: "sparkles")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                } header: {
+                    Text("About")
+                }
+                Section {
                     LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")
                 }
             }
