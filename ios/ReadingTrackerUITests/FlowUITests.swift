@@ -44,7 +44,11 @@ final class FlowUITests: XCTestCase {
         let f = app.textFields[id]
         XCTAssertTrue(f.waitForExistence(timeout: 5), "missing field \(id)")
         // Bring the field well into view first: a tap by position doesn't scroll, and the tab bar floats over the bottom.
-        for _ in 0..<4 where !f.isHittable || f.frame.maxY > app.frame.height - 140 {
+        // (When the keyboard is already up, it covers the lower part of the screen too.)
+        for _ in 0..<4 {
+            let keyboard = app.keyboards.firstMatch
+            let limit = keyboard.exists ? keyboard.frame.minY - 60 : app.frame.height - 140
+            if f.isHittable && f.frame.maxY <= limit { break }
             app.swipeUp(velocity: .slow)
         }
         // Tap at the right-hand end so the cursor lands after any existing text, then delete it all.

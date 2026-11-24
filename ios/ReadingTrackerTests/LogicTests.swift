@@ -392,7 +392,7 @@ import AVFoundation
         let scores = Stats.scores(books: allBooks.map(\.snap), sessions: allSessions.map(\.snap), now: Day.date("2026-11-15"))
         #expect(scores.finishedThisMonth == 1)
         #expect(scores.month > 0)
-        #expect(Backup.csv(ctx).hasPrefix("Book,Author,Status"))
+        #expect(Backup.csv(ctx).hasPrefix("Book,Author,Format,Status"))
     }
 
     @Test func testLoggingFinishesTheBook() throws {
