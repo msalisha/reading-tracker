@@ -43,6 +43,10 @@ final class FlowUITests: XCTestCase {
     private func type(_ app: XCUIApplication, _ id: String, _ text: String) {
         let f = app.textFields[id]
         XCTAssertTrue(f.waitForExistence(timeout: 5), "missing field \(id)")
+        // Bring the field well into view first: a tap by position doesn't scroll, and the tab bar floats over the bottom.
+        for _ in 0..<4 where !f.isHittable || f.frame.maxY > app.frame.height - 140 {
+            app.swipeUp(velocity: .slow)
+        }
         // Tap at the right-hand end so the cursor lands after any existing text, then delete it all.
         f.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
         let existing = (f.value as? String) ?? ""
@@ -96,6 +100,20 @@ final class FlowUITests: XCTestCase {
         app.buttons["sound-off"].tap()
         tab(app, "Log")
         XCTAssertTrue(app.staticTexts["+25"].waitForExistence(timeout: 5))
+    }
+
+    func testSyncSwitchTurnsOffAndOn() {
+        let app = launch(["-uitest-sample"])
+        tab(app, "Settings")
+        let toggle = app.switches["syncToggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5), "Settings should have a Sync with iCloud switch")
+        XCTAssertEqual(toggle.value as? String, "1", "sync starts on")
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()   // the switch itself, at the right-hand end
+        XCTAssertEqual(app.switches["syncToggle"].value as? String, "0", "the switch should turn off")
+        shot(app, "06b-settings-sync-off")
+        let again = app.switches["syncToggle"]
+        again.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()   // the switch itself, at the right-hand end
+        XCTAssertEqual(app.switches["syncToggle"].value as? String, "1", "and back on")
     }
 
     func testNotesRatingAndTheme() {

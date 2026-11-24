@@ -33,6 +33,7 @@ struct ReadingTrackerApp: App {
         if uiTest {
             TimerStorage.save(nil)
             AppGroup.defaults.removeObject(forKey: AppTheme.storageKey)
+            AppGroup.defaults.removeObject(forKey: "iCloudSyncEnabled")
             if args.contains("-uitest-sample") {
                 SampleData.insert(into: container.mainContext)
             }

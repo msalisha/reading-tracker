@@ -92,8 +92,9 @@ struct QuoteCard: View {
     private var poster: some View {
         ZStack {
             theme.brand
-            Circle().fill(theme.highlight).frame(width: w * 0.85, height: w * 0.85)
-                .offset(x: -w * 0.33, y: h * 0.5 - w * 0.2)
+            // sits behind the title sticker only, so the quote never runs over it
+            Circle().fill(theme.highlight).frame(width: w * 0.5, height: w * 0.5)
+                .offset(x: -w * 0.42, y: h * 0.5 - 6)
             RoundedRectangle(cornerRadius: 36, style: .continuous).fill(theme.onBrand)
                 .frame(width: 170, height: 170).rotationEffect(.degrees(18))
                 .offset(x: w * 0.5 + 6, y: -h * 0.5 - 12)

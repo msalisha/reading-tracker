@@ -214,9 +214,12 @@ struct RecapSlideView: View {
                 Circle().fill(theme.brand).frame(width: w * 0.8, height: w * 0.8).position(x: w * 0.98, y: h * 0.96)
                 Squiggle().stroke(theme.onHighlight, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .frame(width: 70, height: 26).position(x: w * 0.78, y: h * 0.16)
-            case .habits, .summary:
+            case .habits:
                 Circle().fill(theme.brand).frame(width: w * 0.55, height: w * 0.55).position(x: w * 1.0, y: h * 0.03)
                 Burst(points: 4, inner: 0.3).fill(theme.highlight).frame(width: 30, height: 30).position(x: w * 0.7, y: h * 0.07)
+            case .summary:
+                Circle().fill(theme.brand).frame(width: w * 0.6, height: w * 0.6).position(x: w * 1.0, y: h * 1.0)
+                Burst(points: 4, inner: 0.3).fill(theme.highlight).frame(width: 30, height: 30).position(x: w * 0.62, y: h * 0.93)
             case .quote:
                 Canvas { ctx, s in
                     func blob(_ x: CGFloat, _ y: CGFloat, _ r: CGFloat, _ c: Color, _ o: Double) {

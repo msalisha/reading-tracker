@@ -118,7 +118,7 @@ jobs:
             sips -Z 900 -s format jpeg -s formatOptions 60 "$f" --out "$out" >/dev/null
           done)
           tail -150 "$GITHUB_WORKSPACE/ios/build.log" > shots/build-tail.txt || true
-          grep -E "error:" "$GITHUB_WORKSPACE/ios/build.log" | head -60 > shots/errors.txt || true
+          grep -E "error:|Test Case .* failed|XCTAssert|Expectation failed|recorded an issue" "$GITHUB_WORKSPACE/ios/build.log" | grep -v "CoreData" | cut -c1-600 | head -80 > shots/errors.txt || true
           cd shots
           git init -q -b ci-screenshots
           git add -A
