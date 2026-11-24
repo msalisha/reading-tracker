@@ -72,6 +72,28 @@ struct ProgressBar: View {
     }
 }
 
+/// A small ring with the percentage inside.
+struct ProgressRing: View {
+    let fraction: Double
+    var color: Color
+    var size: CGFloat = 46
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(Color(.systemGray5), lineWidth: 5)
+            Circle().trim(from: 0, to: min(1, max(0, fraction)))
+                .stroke(color, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(.snappy, value: fraction)
+            Text("\(Int((fraction * 100).rounded()))%").font(.system(size: size * 0.27, weight: .black, design: .rounded)).monospacedDigit()
+        }
+        .frame(width: size, height: size)
+        .accessibilityElement()
+        .accessibilityLabel("Progress")
+        .accessibilityValue("\(Int((fraction * 100).rounded())) percent")
+    }
+}
+
 /// Little filled line of the page reached over time.
 struct Sparkline: View {
     let points: [(Date, Int)]

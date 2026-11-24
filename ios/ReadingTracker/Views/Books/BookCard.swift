@@ -17,60 +17,65 @@ struct BookCard: View {
 
     var body: some View {
         let pace = Stats.pace(book.snap, sessions: sessions, now: .now)
-        VStack(alignment: .leading, spacing: 10) {
-            NavigationLink(value: book) {
-                HStack(alignment: .top, spacing: 12) {
-                    CoverView(data: book.coverData, title: book.title, width: 48)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(book.title).font(.headline).multilineTextAlignment(.leading)
-                        if !book.author.isEmpty { Text(book.author).font(.subheadline).foregroundStyle(.secondary) }
-                        if book.isAudio { AudioBadge() }
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 14) {
+                NavigationLink(value: book) {
+                    HStack(alignment: .top, spacing: 14) {
+                        CoverView(data: book.coverData, title: book.title, width: 72)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(book.title).font(.system(.headline, design: .rounded, weight: .bold)).multilineTextAlignment(.leading)
+                            if !book.author.isEmpty { Text(book.author).font(.subheadline).foregroundStyle(.secondary) }
+                            if book.isAudio { AudioBadge().padding(.top, 2) }
+                            Spacer(minLength: 6)
+                            Text(pace.position).font(.footnote.weight(.semibold)).monospacedDigit()
+                            Text(pace.line).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                        }
+                        Spacer(minLength: 0)
                     }
-                    Spacer(minLength: 0)
-                    Text("\(Int((pace.fraction * 100).rounded()))%").font(.system(.title3, design: .rounded, weight: .black))
+                }
+                .buttonStyle(.plain)
+                VStack(alignment: .trailing, spacing: 10) {
+                    Menu {
+                        Button { guarded { Library.markFinished(ctx, book); router.rateBookID = book.uid } } label: {
+                            Label("Finished it", systemImage: "checkmark.seal")
+                        }
+                        Button { guarded { askDNF = true } } label: { Label("Did not finish", systemImage: "xmark.circle") }
+                        Divider()
+                        Button(role: .destructive) { askDelete = true } label: { Label("Delete", systemImage: "trash") }
+                    } label: {
+                        Image(systemName: "ellipsis").font(.headline).foregroundStyle(.secondary)
+                            .frame(width: 34, height: 34).background(Color(.tertiarySystemFill), in: Circle())
+                    }
+                    .accessibilityLabel("More for \(book.title)")
+                    .accessibilityIdentifier("cardMore")
+                    ProgressRing(fraction: pace.fraction, color: theme.brand)
                 }
             }
-            .buttonStyle(.plain)
 
-            ProgressBar(fraction: pace.fraction, color: theme.brand)
-            HStack {
-                Text(pace.position)
-                Spacer()
-                Text(pace.line).multilineTextAlignment(.trailing)
-            }
-            .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+            ProgressBar(fraction: pace.fraction, color: theme.brand, height: 8)
             Sparkline(points: Stats.progressLine(book.snap, sessions: sessions), total: book.totalPages, color: theme.brandText)
-
-            HStack(spacing: 8) {
-                Button(book.isAudio ? "Log listening" : "Log pages") { guarded { router.logBookID = book.uid; router.tab = .today } }
-                    .buttonStyle(PillButton(kind: .solid))
-                Button("Finished it") { guarded { Library.markFinished(ctx, book); router.rateBookID = book.uid } }
-                    .buttonStyle(PillButton(kind: .highlight))
-            }
 
             if let t = timer.timer, t.bookID == book.uid {
                 CardTimer(timer: t)
-            } else if timer.timer == nil {
-                Button("Start timer") {
-                    guarded {
-                        timer.start(book: book, startPage: book.currentPage)
-                        router.tab = .today
-                    }
+            }
+            HStack(spacing: 8) {
+                if timer.timer == nil {
+                    Button {
+                        guarded {
+                            timer.start(book: book, startPage: book.currentPage)
+                            router.tab = .today
+                        }
+                    } label: { Label("Start timer", systemImage: "play.fill") }
+                    .buttonStyle(PillButton(kind: .highlight))
+                    .accessibilityIdentifier("cardStartTimer")
                 }
-                .buttonStyle(PillButton(kind: .outline))
-                .accessibilityIdentifier("cardStartTimer")
+                Button { guarded { router.logBookID = book.uid; router.tab = .today } } label: {
+                    Label(book.isAudio ? "Log listening" : "Log pages", systemImage: "square.and.pencil")
+                }
+                .buttonStyle(PillButton(kind: .solid))
             }
-
-            HStack {
-                Button("Did not finish") { guarded { askDNF = true } }
-                Spacer()
-                Button("Delete", role: .destructive) { askDelete = true }
-            }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 6)
         }
-        .card(theme.surface, radius: 18, padding: 16)
+        .card(theme.surface, radius: 24, padding: 16)
         .alert("Write off \(book.title)?", isPresented: $askDNF) {
             TextField("Why? (optional)", text: $dnfNote)
             Button("Write it off", role: .destructive) { Library.markDNF(ctx, book, note: dnfNote); dnfNote = "" }
