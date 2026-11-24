@@ -46,7 +46,7 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Toggle(isOn: Binding(get: { syncOn }, set: setSync)) {
+                    Toggle(isOn: Binding(get: { syncOn }, set: { on in setSync(on) })) {
                         Label("Sync with iCloud", systemImage: sync == .on ? "checkmark.icloud.fill" : "icloud")
                     }
                     .tint(theme.brand)
