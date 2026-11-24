@@ -10,6 +10,8 @@ on:
 jobs:
   build-and-test:
     runs-on: macos-15
+    permissions:
+      contents: write   # to publish small screenshot copies to the ci-screenshots branch
     timeout-minutes: 60
     defaults:
       run:
@@ -99,3 +101,21 @@ jobs:
           name: app-store-screenshots
           path: ${{ runner.temp }}/screenshots/AppStore
           if-no-files-found: ignore
+
+      - name: Publish small screenshots to the ci-screenshots branch
+        if: always()
+        working-directory: ${{ runner.temp }}
+        run: |
+          [ -d screenshots ] || exit 0
+          rm -rf shots && mkdir shots
+          (cd screenshots && find . -name '*.png' | while read -r f; do
+            out="../shots/$(echo "${f#./}" | tr '/' '_' | sed 's/\.png$/.jpg/')"
+            sips -Z 900 -s format jpeg -s formatOptions 60 "$f" --out "$out" >/dev/null
+          done)
+          tail -150 "$GITHUB_WORKSPACE/ios/build.log" > shots/build-tail.txt || true
+          grep -E "error:" "$GITHUB_WORKSPACE/ios/build.log" | head -60 > shots/errors.txt || true
+          cd shots
+          git init -q -b ci-screenshots
+          git add -A
+          git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "Screenshots for ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-screenshots
