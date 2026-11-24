@@ -9,6 +9,7 @@ enum Backup {
         var totalPages: Int, startPage: Int, status: BookStatus
         var addedAt: Date, lastAt: Date
         var finishedDay: String?, dnfDay: String?, dnfNote: String?, rating: Double?
+        var isAudio: Bool = false
     }
     struct SessionRecord: Equatable {
         var id: String, bookID: String, startedAt: Date, day: String
@@ -21,7 +22,11 @@ enum Backup {
         var books: [BookRecord] = []
         var sessions: [SessionRecord] = []
         var notes: [NoteRecord] = []
-        var totalPages: Int { sessions.reduce(0) { $0 + max(0, $1.endPage - $1.startPage) } }
+        /// Pages read in print books (audiobook sessions are in minutes, so they aren't counted here).
+        var totalPages: Int {
+            let audio = Set(books.filter(\.isAudio).map(\.id))
+            return sessions.filter { !audio.contains($0.bookID) }.reduce(0) { $0 + max(0, $1.endPage - $1.startPage) }
+        }
     }
 
     enum Problem: LocalizedError {
@@ -45,7 +50,7 @@ enum Backup {
                 status: BookStatus(rawValue: b["status"] as? String ?? "") ?? .reading,
                 addedAt: date(b["addedAt"]) ?? .now, lastAt: date(b["lastAt"]) ?? date(b["addedAt"]) ?? .now,
                 finishedDay: b["finishedDay"] as? String, dnfDay: b["dnfDay"] as? String, dnfNote: b["dnfNote"] as? String,
-                rating: b["rating"] as? Double))
+                rating: b["rating"] as? Double, isAudio: (b["format"] as? String) == "audio"))
         }
         let bookIDs = Set(out.books.map(\.id))
         for (id, value) in sessions {
@@ -100,6 +105,7 @@ enum Backup {
             b.dnfDay = r.dnfDay
             b.dnfNote = r.dnfNote
             b.rating = r.rating
+            b.isAudio = r.isAudio
         }
         for r in contents.sessions {
             guard let b = byID[r.bookID] else { continue }
@@ -143,7 +149,7 @@ enum Backup {
                 "title": book.title, "author": book.author, "isbn": book.isbn as Any, "totalPages": book.totalPages,
                 "startPage": book.startPage, "status": book.statusRaw, "addedAt": iso(book.addedAt), "lastAt": iso(book.lastAt),
                 "finishedDay": book.finishedDay as Any, "dnfDay": book.dnfDay as Any, "dnfNote": book.dnfNote as Any,
-                "rating": book.rating as Any])
+                "rating": book.rating as Any, "format": book.formatRaw])
             for x in book.sessions ?? [] {
                 s[x.uid] = compact([
                     "bookId": book.uid, "startedAt": local(x.startedAt), "day": x.day, "startPage": x.startPage,
@@ -162,9 +168,10 @@ enum Backup {
     @MainActor
     static func csv(_ ctx: ModelContext) -> String {
         let books = ((try? ctx.fetch(FetchDescriptor<Book>())) ?? []).sorted { $0.addedAt.seconds < $1.addedAt.seconds }
-        var rows = ["Book,Author,Status,Pages,Rating,Finished,Session started,From page,To page,Pages read,Minutes"]
+        // For audiobooks, the length and positions are in minutes.
+        var rows = ["Book,Author,Format,Status,Pages or minutes,Rating,Finished,Session started,From,To,Pages or minutes covered,Time spent (min)"]
         for b in books {
-            let head = [b.title, b.author, b.statusRaw, String(b.totalPages), b.rating.map { String($0) } ?? "", b.finishedDay ?? ""]
+            let head = [b.title, b.author, b.isAudio ? "audiobook" : "book", b.statusRaw, String(b.totalPages), b.rating.map { String($0) } ?? "", b.finishedDay ?? ""]
             let ss = (b.sessions ?? []).sorted { $0.startedAt.seconds < $1.startedAt.seconds }
             if ss.isEmpty { rows.append((head + ["", "", "", "", ""]).map(field).joined(separator: ",")) }
             for s in ss {

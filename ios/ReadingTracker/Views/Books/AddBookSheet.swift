@@ -16,6 +16,7 @@ struct AddBookSheet: View {
     @State private var pagesText = ""
     @State private var atText = ""
     @State private var status: BookStatus = .reading
+    @State private var isAudio = false
     @State private var cover: Data?
     @State private var coverURL: URL?
     @State private var lookupMessage: String?
@@ -64,6 +65,12 @@ struct AddBookSheet: View {
                 }
 
                 Section("Book") {
+                    Picker("Format", selection: $isAudio) {
+                        Label("Book", systemImage: "book").tag(false)
+                        Label("Audiobook", systemImage: "headphones").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("addFormat")
                     HStack(alignment: .top, spacing: 12) {
                         CoverButton(cover: $cover, title: title, author: author, isbn: isbn.isEmpty ? nil : isbn, width: 54)
                         VStack {
@@ -72,17 +79,25 @@ struct AddBookSheet: View {
                             TextField("Author", text: $author).accessibilityIdentifier("addAuthor")
                         }
                     }
-                    LabeledContent("Number of pages") {
-                        TextField("272", text: $pagesText).keyboardType(.numberPad).multilineTextAlignment(.trailing)
-                            .accessibilityIdentifier("addPages")
+                    if isAudio {
+                        LabeledContent("Length") { DurationInput(minutesText: $pagesText, identifier: "addLength") }
+                    } else {
+                        LabeledContent("Number of pages") {
+                            TextField("272", text: $pagesText).keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                                .accessibilityIdentifier("addPages")
+                        }
                     }
                     Picker("Add to", selection: $status) {
                         Text("On the go").tag(BookStatus.reading)
                         Text("Want to read").tag(BookStatus.wantToRead)
                     }
                     if status == .reading {
-                        LabeledContent("Already on page") {
-                            TextField("0", text: $atText).keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                        if isAudio {
+                            LabeledContent("Already listened to") { DurationInput(minutesText: $atText, identifier: "addAt") }
+                        } else {
+                            LabeledContent("Already on page") {
+                                TextField("0", text: $atText).keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                            }
                         }
                     }
                 }
@@ -110,6 +125,7 @@ struct AddBookSheet: View {
                 GoogleCoverSearchSheet(query: q.text) { cover = $0 }
             }
             .onAppear { status = defaultStatus }
+            .onChange(of: isAudio) { _, _ in pagesText = ""; atText = ""; error = nil }
         }
     }
 
@@ -141,7 +157,7 @@ struct AddBookSheet: View {
         }
         title = found.title
         if !found.author.isEmpty { author = found.author }
-        if let p = found.pages { pagesText = "\(p)" }
+        if let p = found.pages, !isAudio { pagesText = "\(p)" }
         coverURL = found.coverURL
         lookupMessage = found.pages != nil ? "Found it. Editions differ, so check the last page of your copy." : "Found it. Add the number of pages from your copy."
         cover = await BookLookup.cover(isbn: code, fallback: found.coverURL)
@@ -150,13 +166,20 @@ struct AddBookSheet: View {
     private func save() {
         let name = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { error = "Add the book name."; return }
-        guard let pages = Int(trimming: pagesText), pages > 0 else { error = "Number of pages should be 1 or more."; return }
+        guard let pages = Int(trimming: pagesText), pages > 0 else {
+            error = isAudio ? "Add how long the audiobook is." : "Number of pages should be 1 or more."
+            return
+        }
         let at = status == .reading ? (Int(trimming: atText) ?? 0) : 0
-        guard at >= 0, at < pages else { error = "“Already on page” should be between 0 and \(pages - 1)."; return }
+        guard at >= 0, at < pages else {
+            error = isAudio ? "“Already listened to” should be less than the audiobook's length."
+                            : "“Already on page” should be between 0 and \(pages - 1)."
+            return
+        }
         let code = isbn.isEmpty ? nil : ISBN.normalize(isbn)
         if !isbn.isEmpty, code == nil { error = "That ISBN doesn't look right. Clear it or check the number."; return }
         let book = Book(title: String(name.prefix(200)), author: String(author.trimmingCharacters(in: .whitespaces).prefix(200)),
-                        isbn: code, totalPages: pages, startPage: at, status: status, coverData: cover)
+                        isbn: code, totalPages: pages, startPage: at, status: status, coverData: cover, isAudio: isAudio)
         ctx.insert(book)
         Library.save(ctx)
         Haptics.success()

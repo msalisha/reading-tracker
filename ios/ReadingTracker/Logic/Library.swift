@@ -7,7 +7,16 @@ import UIKit
 @MainActor
 enum Library {
     /// Checks a start/finish pair. Returns a message to show, or nil when it's fine.
-    static func problem(from: Int?, to: Int?, totalPages: Int) -> String? {
+    static func problem(from: Int?, to: Int?, totalPages: Int, isAudio: Bool = false) -> String? {
+        if isAudio {
+            let length = Stats.formatMinutes(Double(totalPages))
+            guard let from, from >= 0 else { return "Enter where you started listening." }
+            if from >= totalPages { return "This audiobook is \(length) long, so you need to start before the end." }
+            guard let to else { return "Enter where you got to." }
+            if to <= from { return "You started at \(Stats.formatMinutes(Double(from))), so where you got to needs to be later." }
+            if to > totalPages { return "This audiobook is \(length) long, so you can't be further than that." }
+            return nil
+        }
         guard let from, from >= 0 else { return "Type the page you started on." }
         if from >= totalPages { return "This book has \(totalPages) pages, so you need to start before page \(totalPages)." }
         guard let to else { return "Type the page you finished on." }
@@ -99,6 +108,7 @@ enum Library {
         let cut = Day.key(Day.add(-400, to: .now))
         var snapshot = WidgetSnapshot()
         snapshot.pagesByDay = Stats.pagesByDay(snaps).filter { $0.key >= cut }
+        snapshot.listenedByDay = Stats.listenedByDay(snaps).filter { $0.key >= cut }
         let mk = Day.monthKey(.now)
         snapshot.booksThisMonth = books.filter { $0.status == .finished && ($0.finishedDay ?? "").hasPrefix(mk) }.count
         let timerBook = TimerStorage.load()?.bookID
@@ -106,7 +116,8 @@ enum Library {
         if let b = reading.first(where: { $0.uid == timerBook }) ?? reading.first {
             snapshot.currentBook = .init(id: b.uid, title: b.title, author: b.author,
                                          page: Stats.currentPage(b.snap, sessions: snaps), totalPages: b.totalPages,
-                                         cover: b.coverData.flatMap { Covers.thumbnail($0, maxSide: 240) })
+                                         cover: b.coverData.flatMap { Covers.thumbnail($0, maxSide: 240) },
+                                         isAudio: b.isAudio)
         }
         snapshot.save()
         WidgetCenter.shared.reloadAllTimelines()

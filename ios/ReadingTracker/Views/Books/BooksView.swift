@@ -75,7 +75,7 @@ struct BooksView: View {
                         CoverView(data: book.coverData, title: book.title, width: 44)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(book.title).font(.headline).multilineTextAlignment(.leading)
-                            Text([book.author, "\(book.totalPages) pages"].filter { !$0.isEmpty }.joined(separator: " · "))
+                            Text([book.author, book.snap.lengthText].filter { !$0.isEmpty }.joined(separator: " · "))
                                 .font(.subheadline).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
@@ -142,11 +142,12 @@ struct ShelfRow: View {
         if !book.author.isEmpty { parts.append(book.author) }
         if book.status == .dnf {
             let cp = book.currentPage
-            parts.append("stopped on page \(cp) of \(book.totalPages) (\(Int((Double(cp) / Double(max(1, book.totalPages)) * 100).rounded()))%)")
+            let pct = Int((Double(cp) / Double(max(1, book.totalPages)) * 100).rounded())
+            parts.append(book.isAudio ? "stopped \(pct)% through" : "stopped on page \(cp) of \(book.totalPages) (\(pct)%)")
             if let d = book.dnfDay { parts.append(Day.short(d)) }
             if let n = book.dnfNote { parts.append("“\(n)”") }
         } else {
-            parts.append("\(book.totalPages.formatted()) pages")
+            parts.append(book.snap.lengthText)
             if let d = book.finishedDay { parts.append("finished \(Day.short(d))") }
             if let days = Stats.daysTaken(book.snap, sessions: sessions) { parts.append("took \(days) \(days == 1 ? "day" : "days")") }
         }

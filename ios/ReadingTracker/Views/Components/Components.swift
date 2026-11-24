@@ -154,6 +154,18 @@ struct StarRating: View {
     }
 }
 
+/// A small "Audiobook" tag.
+struct AudioBadge: View {
+    @Environment(\.theme) private var theme
+    var body: some View {
+        Label("Audiobook", systemImage: "headphones")
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(theme.brandText)
+            .padding(.horizontal, 7).padding(.vertical, 3)
+            .background(theme.brandText.opacity(0.12), in: Capsule())
+    }
+}
+
 struct CoverView: View {
     let data: Data?
     let title: String
@@ -269,18 +281,79 @@ extension View {
     }
 }
 
-/// A labelled page-number box.
+/// Hours and minutes boxes for an audiobook position or length. Reads and writes a total number of minutes as
+/// text, the same way the page boxes hold a page number.
+struct DurationInput: View {
+    @Binding var minutesText: String
+    var identifier: String
+    var focused: FocusState<Bool>.Binding? = nil
+    var boxed = false
+    @State private var hours = ""
+    @State private var mins = ""
+
+    var body: some View {
+        HStack(spacing: 4) {
+            box(TextField("0", text: $hours), id: identifier + "Hours", focus: true)
+            Text("h").font(.subheadline.weight(.semibold))
+            box(TextField("00", text: $mins), id: identifier + "Minutes", focus: false)
+            Text("m").font(.subheadline.weight(.semibold))
+        }
+        .onAppear(perform: pull)
+        .onChange(of: minutesText) { _, _ in if total != Int(trimming: minutesText) { pull() } }
+        .onChange(of: hours) { _, _ in push() }
+        .onChange(of: mins) { _, _ in push() }
+    }
+
+    private var total: Int? {
+        hours.isEmpty && mins.isEmpty ? nil : (Int(trimming: hours) ?? 0) * 60 + (Int(trimming: mins) ?? 0)
+    }
+
+    private func pull() {
+        if let t = Int(trimming: minutesText) { hours = "\(t / 60)"; mins = String(format: "%02d", t % 60) } else { hours = ""; mins = "" }
+    }
+
+    private func push() {
+        let new = total.map(String.init) ?? ""
+        if new != minutesText { minutesText = new }
+    }
+
+    @ViewBuilder private func box(_ field: TextField<Text>, id: String, focus: Bool) -> some View {
+        let f = field.keyboardType(.numberPad).multilineTextAlignment(.center).accessibilityIdentifier(id)
+        Group {
+            if focus, let focused { f.focused(focused) } else { f }
+        }
+        .font(boxed ? .title3.weight(.bold) : .body)
+        .foregroundStyle(boxed ? Color(hex: 0x111113) : Color.primary)
+        .padding(.vertical, boxed ? 10 : 4)
+        .frame(width: boxed ? 52 : 44)
+        .background(boxed ? Color.white : Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: boxed ? 12 : 8, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color(hex: 0x111113), lineWidth: boxed ? 1.5 : 0))
+    }
+}
+
+/// A labelled page-number box (or hours and minutes, for an audiobook).
 struct PageField: View {
     let label: String
     @Binding var text: String
     var placeholder = ""
     var identifier: String
     var focused: FocusState<Bool>.Binding
+    var isAudio = false
 
     var body: some View {
         HStack {
             Text(label).font(.subheadline.weight(.bold))
             Spacer()
+            if isAudio {
+                DurationInput(minutesText: $text, identifier: identifier, focused: focused, boxed: true)
+            } else {
+                pageBox
+            }
+        }
+    }
+
+    private var pageBox: some View {
+        Group {
             TextField(placeholder, text: $text)
                 .focused(focused)
                 .numericField()

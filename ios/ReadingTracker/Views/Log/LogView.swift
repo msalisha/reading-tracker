@@ -45,8 +45,9 @@ struct LogView: View {
         if groups.isEmpty {
             Text("Every session you log shows up here.").foregroundStyle(.secondary)
         } else {
-            let total = sessions.reduce(0) { $0 + $1.pages }
-            Text("\(sessions.count) sessions · \(total.formatted()) pages all time").font(.footnote).foregroundStyle(.secondary)
+            let total = sessions.filter { !($0.book?.isAudio ?? false) }.reduce(0) { $0 + $1.pages }
+            let listened = sessions.filter { $0.book?.isAudio ?? false }.reduce(0) { $0 + $1.pages }
+            Text("\(sessions.count) sessions · \(total.formatted()) pages" + (listened > 0 ? " · \(Stats.formatMinutes(Double(listened))) listened" : "") + " all time").font(.footnote).foregroundStyle(.secondary)
                 .listRowBackground(Color.clear)
         }
         ForEach(groups, id: \.key) { group in
@@ -55,12 +56,12 @@ struct LogView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(s.book?.title ?? "Deleted book").font(.subheadline.weight(.semibold))
-                            Text(s.startedAt.formatted(date: .omitted, time: .shortened) + " · p. \(s.startPage) → \(s.endPage)"
+                            Text(s.startedAt.formatted(date: .omitted, time: .shortened) + " · " + s.snap.rangeText
                                  + (s.minutes.map { " · \($0) min" } ?? ""))
                                 .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
                         }
                         Spacer()
-                        Text("+\(s.pages)").font(.system(.headline, design: .rounded, weight: .black)).foregroundStyle(theme.brandText)
+                        Text(s.snap.gainText).font(.system(.headline, design: .rounded, weight: .black)).foregroundStyle(theme.brandText)
                     }
                     .swipeActions {
                         Button("Delete", role: .destructive) { Library.delete(ctx, s) }

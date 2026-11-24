@@ -87,13 +87,14 @@ struct ScoreBoard: View {
                 tile("Streak", "flame.fill", "\(scores.streak)", scores.streak == 1 ? "day in a row" : "days in a row",
                      fill: scores.streak > 0 ? theme.highlight : theme.surface,
                      text: scores.streak > 0 ? theme.onHighlight : Color.primary, big: true)
-                tile("Today", "book.fill", scores.today.formatted(), scores.today == 1 ? "page" : "pages",
+                tile("Today", "book.fill", scores.today.formatted(),
+                     (scores.today == 1 ? "page" : "pages") + listened(scores.listenedToday),
                      fill: theme.board, text: theme.boardText, big: true)
             }
             HStack(spacing: 10) {
-                tile("This week", "calendar", scores.week.formatted(), Stats.versus(scores.week, scores.lastWeekSoFar, "last week"),
+                tile("This week", "calendar", scores.week.formatted(), Stats.versus(scores.week, scores.lastWeekSoFar, "last week") + listened(scores.listenedWeek),
                      fill: theme.surface, text: Color.primary)
-                tile("This month", "chart.bar.fill", scores.month.formatted(), Stats.versus(scores.month, scores.lastMonthSoFar, "last month"),
+                tile("This month", "chart.bar.fill", scores.month.formatted(), Stats.versus(scores.month, scores.lastMonthSoFar, "last month") + listened(scores.listenedMonth),
                      fill: theme.surface, text: Color.primary)
             }
             HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -109,6 +110,11 @@ struct ScoreBoard: View {
             .background(theme.brand, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// " · 1h 10m listened", when there has been any listening.
+    private func listened(_ minutes: Int) -> String {
+        minutes > 0 ? " · \(Stats.formatMinutes(Double(minutes))) listened" : ""
     }
 
     private func tile(_ label: String, _ icon: String, _ value: String, _ sub: String,
@@ -145,7 +151,7 @@ struct MiniBookRow: View {
                     Text("\(Int((pace.fraction * 100).rounded()))%").font(.system(.headline, design: .rounded, weight: .black))
                 }
                 ProgressBar(fraction: pace.fraction, color: theme.brand, height: 8)
-                Text("Page \(pace.current.formatted()) of \(book.totalPages.formatted()) · \(pace.line)")
+                Text("\(pace.position) · \(pace.line)")
                     .font(.footnote).foregroundStyle(.secondary)
                 if let t = timer.timer, t.bookID == book.uid {
                     TimelineView(.periodic(from: .now, by: 1)) { ctx in

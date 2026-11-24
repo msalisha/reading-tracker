@@ -17,6 +17,11 @@ struct BookSnap: Identifiable, Hashable {
     var rating: Double? = nil
     var addedAt: Date = .now
     var lastAt: Date = .now
+    /// An audiobook: its length and positions are minutes, not pages.
+    var isAudio: Bool = false
+
+    /// "432 pages" or "11h 05m".
+    var lengthText: String { isAudio ? Stats.formatMinutes(Double(totalPages)) : "\(totalPages.formatted()) pages" }
 }
 
 struct SessionSnap: Identifiable, Hashable {
@@ -28,6 +33,15 @@ struct SessionSnap: Identifiable, Hashable {
     var endPage: Int
     var pages: Int
     var minutes: Int? = nil
+    /// A listening session: `pages` and the positions are minutes of the recording.
+    var isAudio: Bool = false
+
+    /// "p. 100 → 138" or "1h 05m → 1h 40m".
+    var rangeText: String {
+        isAudio ? "\(Stats.formatMinutes(Double(startPage))) → \(Stats.formatMinutes(Double(endPage)))" : "p. \(startPage) → \(endPage)"
+    }
+    /// "+38" pages or "+35 min".
+    var gainText: String { isAudio ? "+" + Stats.formatMinutes(Double(pages)) : "+\(pages)" }
 }
 
 struct Scores: Equatable {
@@ -39,6 +53,10 @@ struct Scores: Equatable {
     var finishedThisMonth = 0
     var dnfThisMonth = 0
     var streak = 0
+    /// Minutes of audiobook listened to.
+    var listenedToday = 0
+    var listenedWeek = 0
+    var listenedMonth = 0
 }
 
 struct Pace: Equatable {
@@ -47,11 +65,20 @@ struct Pace: Equatable {
     var etaDays: Int?
     var hasSessions: Bool
     var fraction: Double
+    var isAudio = false
+    var total = 0
 
     var line: String {
         guard hasSessions else { return "No sessions yet" }
-        if let eta = etaDays { return "\(left.formatted()) left · about \(eta) \(eta == 1 ? "day" : "days") at your pace" }
-        return "\(left.formatted()) pages left"
+        let leftText = isAudio ? Stats.formatMinutes(Double(left)) : left.formatted()
+        if let eta = etaDays { return "\(leftText) left · about \(eta) \(eta == 1 ? "day" : "days") at your pace" }
+        return isAudio ? "\(leftText) left" : "\(leftText) pages left"
+    }
+
+    /// "Page 138 of 432" or "3h 20m of 11h 05m".
+    var position: String {
+        isAudio ? "\(Stats.formatMinutes(Double(current))) of \(Stats.formatMinutes(Double(total)))"
+                : "Page \(current.formatted()) of \(total.formatted())"
     }
 }
 
@@ -105,7 +132,22 @@ enum Stats {
         return min(page, book.totalPages)
     }
 
+    /// Pages read per day (print books only).
     static func pagesByDay(_ sessions: [SessionSnap]) -> [String: Int] {
+        var m: [String: Int] = [:]
+        for s in sessions where !s.isAudio { m[s.day, default: 0] += max(0, s.pages) }
+        return m
+    }
+
+    /// Minutes of audiobook listened to per day.
+    static func listenedByDay(_ sessions: [SessionSnap]) -> [String: Int] {
+        var m: [String: Int] = [:]
+        for s in sessions where s.isAudio { m[s.day, default: 0] += max(0, s.pages) }
+        return m
+    }
+
+    /// Days with any reading or listening, for streaks and calendars.
+    static func activityByDay(_ sessions: [SessionSnap]) -> [String: Int] {
         var m: [String: Int] = [:]
         for s in sessions { m[s.day, default: 0] += max(0, s.pages) }
         return m
@@ -148,9 +190,14 @@ enum Stats {
                 s.lastMonthSoFar += v
             }
         }
+        for (k, v) in listenedByDay(sessions) {
+            if k == today { s.listenedToday += v }
+            if Day.date(k).seconds >= weekStart.seconds && k <= today { s.listenedWeek += v }
+            if k.hasPrefix(mk) { s.listenedMonth += v }
+        }
         s.finishedThisMonth = books.filter { $0.status == .finished && ($0.finishedDay ?? "").hasPrefix(mk) }.count
         s.dnfThisMonth = books.filter { $0.status == .dnf && ($0.dnfDay ?? "").hasPrefix(mk) }.count
-        s.streak = streak(pbd, now: now)
+        s.streak = streak(activityByDay(sessions), now: now)
         return s
     }
 
@@ -171,7 +218,8 @@ enum Stats {
         let perDay = Double(recent) / 14
         let eta = perDay > 0 ? Int((Double(left) / perDay).rounded(.up)) : nil
         let fraction = book.totalPages > 0 ? min(1, Double(current) / Double(book.totalPages)) : 0
-        return Pace(current: current, left: left, etaDays: eta, hasSessions: !mine.isEmpty, fraction: fraction)
+        return Pace(current: current, left: left, etaDays: eta, hasSessions: !mine.isEmpty, fraction: fraction,
+                    isAudio: book.isAudio, total: book.totalPages)
     }
 
     /// Page reached over time for a book, for its little progress line.
@@ -187,8 +235,10 @@ enum Stats {
         return points
     }
 
-    static func pageBars(_ range: ChartRange, sessions: [SessionSnap], now: Date) -> [Bar] {
-        let pbd = pagesByDay(sessions)
+    /// Bars of pages read, or of minutes listened when `audio` is true.
+    static func pageBars(_ range: ChartRange, sessions: [SessionSnap], now: Date, audio: Bool = false) -> [Bar] {
+        let pbd = audio ? listenedByDay(sessions) : pagesByDay(sessions)
+        func amount(_ v: Int) -> String { audio ? formatMinutes(Double(v)) : "\(v.formatted()) pages" }
         var bars: [Bar] = []
         switch range {
         case .day:
@@ -196,7 +246,7 @@ enum Stats {
                 let k = Day.key(Day.add(-i, to: now))
                 let v = pbd[k] ?? 0
                 bars.append(Bar(id: k, label: i == 0 ? "Today" : Day.short(k), value: v, isCurrent: i == 0,
-                                detail: "\(Day.long(k)): \(v.formatted()) pages"))
+                                detail: "\(Day.long(k)): \(amount(v))"))
             }
         case .week:
             let ws = Day.startOfWeek(now)
@@ -206,21 +256,29 @@ enum Stats {
                 for j in 0..<7 { v += pbd[Day.key(Day.add(j, to: start))] ?? 0 }
                 let k = Day.key(start)
                 bars.append(Bar(id: k, label: i == 0 ? "This wk" : Day.short(k), value: v, isCurrent: i == 0,
-                                detail: "Week of \(Day.short(k)): \(v.formatted()) pages"))
+                                detail: "Week of \(Day.short(k)): \(amount(v))"))
             }
         case .month:
             for i in stride(from: 11, through: 0, by: -1) {
                 let mk = Day.monthKey(Day.firstOfMonth(now, offset: -i))
                 let v = pbd.filter { $0.key.hasPrefix(mk) }.reduce(0) { $0 + $1.value }
                 bars.append(Bar(id: mk, label: String(Day.month(mk).prefix(3)), value: v, isCurrent: i == 0,
-                                detail: "\(Day.month(mk)): \(v.formatted()) pages"))
+                                detail: "\(Day.month(mk)): \(amount(v))"))
             }
         }
         return bars
     }
 
-    static func pageBarsSummary(_ range: ChartRange, bars: [Bar]) -> String {
+    static func pageBarsSummary(_ range: ChartRange, bars: [Bar], audio: Bool = false) -> String {
         let total = bars.reduce(0) { $0 + $1.value }
+        if audio {
+            let t = formatMinutes(Double(total))
+            switch range {
+            case .day: return "\(t) listened in the last 14 days · \(formatMinutes(Double(total) / 14)) a day"
+            case .week: return "\(t) listened in the last 8 weeks · \(formatMinutes(Double(total) / 8)) a week"
+            case .month: return "\(t) listened in the last 12 months"
+            }
+        }
         switch range {
         case .day: return "\(total.formatted()) pages in the last 14 days · \(Int((Double(total) / 14).rounded())) a day"
         case .week: return "\(total.formatted()) pages in the last 8 weeks · \(Int((Double(total) / 8).rounded())) a week"
@@ -234,11 +292,13 @@ enum Stats {
         var pages: [String: Int] = [:], mins: [String: Int] = [:]
         var pacePages = 0, paceMins = 0
         for s in sessions where s.day >= cut {
-            pages[s.day, default: 0] += max(0, s.pages)
+            if !s.isAudio { pages[s.day, default: 0] += max(0, s.pages) }
             if let m = s.minutes, m > 0 {
                 mins[s.day, default: 0] += m
-                pacePages += s.pages
-                paceMins += m
+                if !s.isAudio {   // reading speed is about pages, so listening doesn't count towards it
+                    pacePages += s.pages
+                    paceMins += m
+                }
             }
         }
         let pageDays = pages.filter { $0.value > 0 }
@@ -273,7 +333,7 @@ enum Stats {
         let pbd = pagesByDay(sessions).filter { $0.key.hasPrefix(mk) }
         return MonthSummary(finished: fin, writtenOff: dnf, lastMonthFinished: lastN,
                             pages: pbd.values.reduce(0, +),
-                            readDays: Set(pbd.filter { $0.value > 0 }.keys),
+                            readDays: Set(activityByDay(sessions).filter { $0.key.hasPrefix(mk) && $0.value > 0 }.keys),
                             finishDays: Set(fin.compactMap(\.finishedDay)),
                             daysLeft: Day.daysInMonth(now) - Day.dayOfMonth(now))
     }

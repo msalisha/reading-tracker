@@ -65,6 +65,8 @@ struct Recap {
     var finished: [BookSnap] = []
     var writtenOff = 0
     var pages = 0
+    /// Minutes of audiobook listened to.
+    var listened = 0
     var minutes = 0
     var sessions = 0
     var readingDays = 0
@@ -79,7 +81,7 @@ struct Recap {
     var favouriteWeekday: String?
     var quote: Quote?
 
-    var isEmpty: Bool { pages == 0 && finished.isEmpty }
+    var isEmpty: Bool { pages == 0 && listened == 0 && finished.isEmpty }
     var hours: Double { Double(minutes) / 60 }
 
     struct NoteInput {
@@ -98,12 +100,13 @@ struct Recap {
         // Reading
         let mine = sessions.filter { period.contains($0.day) }
         r.sessions = mine.count
-        r.pages = mine.reduce(0) { $0 + max(0, $1.pages) }
+        r.pages = mine.filter { !$0.isAudio }.reduce(0) { $0 + max(0, $1.pages) }
+        r.listened = mine.filter(\.isAudio).reduce(0) { $0 + max(0, $1.pages) }
         r.minutes = mine.compactMap(\.minutes).reduce(0, +)
-        let pbd = Stats.pagesByDay(mine)
+        let pbd = Stats.activityByDay(mine)          // any reading or listening makes it a reading day
         let readDays = pbd.filter { $0.value > 0 }
         r.readingDays = readDays.count
-        if let best = readDays.max(by: { $0.value < $1.value || ($0.value == $1.value && $0.key > $1.key) }) {
+        if let best = Stats.pagesByDay(mine).filter({ $0.value > 0 }).max(by: { $0.value < $1.value || ($0.value == $1.value && $0.key > $1.key) }) {
             r.bestDay = (best.key, best.value)
         }
 
@@ -129,7 +132,7 @@ struct Recap {
         r.averageRating = Stats.averageRating(r.finished)
         r.topBook = r.finished.filter { ($0.rating ?? 0) > 0 }
             .max { ($0.rating ?? 0, $0.finishedDay ?? "") < ($1.rating ?? 0, $1.finishedDay ?? "") }
-        r.longestBook = r.finished.max { $0.totalPages < $1.totalPages }
+        r.longestBook = r.finished.filter { !$0.isAudio }.max { $0.totalPages < $1.totalPages }
         let timed = r.finished.compactMap { b in Stats.daysTaken(b, sessions: sessions).map { (book: b, days: $0) } }
         r.fastest = timed.min { $0.days < $1.days }
 

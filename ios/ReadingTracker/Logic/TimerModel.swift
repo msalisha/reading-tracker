@@ -25,7 +25,7 @@ final class TimerModel {
     func start(book: Book, startPage: Int) {
         guard timer == nil else { return }
         let t = ActiveTimer(bookID: book.uid, bookTitle: book.title, startPage: startPage, startedAt: .now,
-                            accumulated: 0, runningSince: .now, status: .running)
+                            accumulated: 0, runningSince: .now, status: .running, isAudio: book.isAudio)
         write(t)
         LiveActivityController.start(t)
         Haptics.tap()

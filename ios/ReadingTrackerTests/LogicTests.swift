@@ -471,6 +471,67 @@ import AVFoundation
     }
 }
 
+@Suite struct AudiobookTests {
+    private let now = Day.date("2026-11-24")
+    private func session(_ id: String, _ book: String, _ day: String, _ from: Int, _ to: Int, audio: Bool) -> SessionSnap {
+        SessionSnap(id: id, bookID: book, day: day, startedAt: Day.date(day), startPage: from, endPage: to, pages: to - from,
+                    minutes: 30, isAudio: audio)
+    }
+
+    @Test func pagesAndListeningAreCountedSeparately() {
+        let sessions = [session("1", "p", "2026-11-24", 0, 20, audio: false), session("2", "a", "2026-11-24", 0, 45, audio: true),
+                        session("3", "a", "2026-11-23", 45, 100, audio: true)]
+        #expect(Stats.pagesByDay(sessions) == ["2026-11-24": 20])
+        #expect(Stats.listenedByDay(sessions) == ["2026-11-24": 45, "2026-11-23": 55])
+        let scores = Stats.scores(books: [], sessions: sessions, now: now)
+        #expect(scores.today == 20)
+        #expect(scores.listenedToday == 45)
+        #expect(scores.listenedMonth == 100)
+    }
+
+    @Test func listeningKeepsAStreakGoing() {
+        let sessions = [session("1", "p", "2026-11-22", 0, 20, audio: false), session("2", "a", "2026-11-23", 0, 45, audio: true),
+                        session("3", "a", "2026-11-24", 45, 100, audio: true)]
+        #expect(Stats.scores(books: [], sessions: sessions, now: now).streak == 3)
+    }
+
+    @Test func audiobookProgressReadsAsTime() {
+        let book = BookSnap(id: "a", title: "Emma", totalPages: 870, isAudio: true)
+        let pace = Stats.pace(book, sessions: [session("1", "a", "2026-11-24", 0, 200, audio: true)], now: now)
+        #expect(pace.position == "3h 20m of 14h 30m")
+        #expect(pace.line.contains("11h 10m left"))
+        #expect(book.lengthText == "14h 30m")
+        #expect(session("1", "a", "2026-11-24", 65, 100, audio: true).rangeText == "1h 05m → 1h 40m")
+        #expect(session("1", "a", "2026-11-24", 65, 100, audio: true).gainText == "+35 min")
+    }
+
+    @Test func recapSeparatesListening() {
+        let sessions = [session("1", "p", "2026-11-10", 0, 20, audio: false), session("2", "a", "2026-11-11", 0, 90, audio: true)]
+        let r = Recap.make(.month(year: 2026, month: 11), books: [], sessions: sessions, notes: [], now: now)
+        #expect(r.pages == 20)
+        #expect(r.listened == 90)
+        #expect(r.readingDays == 2)
+    }
+
+    @MainActor @Test func backupKeepsTheFormat() throws {
+        let container = Persistence.makeContainer(inMemory: true)
+        let ctx = container.mainContext
+        ctx.insert(Book(uid: "a", title: "Emma", totalPages: 870, isAudio: true))
+        try ctx.save()
+        let parsed = try Backup.parse(Backup.export(ctx))
+        #expect(parsed.books.first?.isAudio == true)
+        let other = Persistence.makeContainer(inMemory: true)
+        Backup.restore(parsed, into: other.mainContext)
+        #expect(try other.mainContext.fetch(FetchDescriptor<Book>()).first?.isAudio == true)
+    }
+
+    @MainActor @Test func listeningPositionsAreChecked() {
+        #expect(Library.problem(from: 10, to: 50, totalPages: 870, isAudio: true) == nil)
+        #expect(Library.problem(from: 50, to: 10, totalPages: 870, isAudio: true)?.contains("later") == true)
+        #expect(Library.problem(from: 10, to: 900, totalPages: 870, isAudio: true)?.contains("14h 30m") == true)
+    }
+}
+
 @MainActor
 @Suite struct CardTests {
     /// Renders every card style and shape, and saves the pictures next to the screenshots when a folder is given.

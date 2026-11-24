@@ -24,6 +24,7 @@ struct BookCard: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(book.title).font(.headline).multilineTextAlignment(.leading)
                         if !book.author.isEmpty { Text(book.author).font(.subheadline).foregroundStyle(.secondary) }
+                        if book.isAudio { AudioBadge() }
                     }
                     Spacer(minLength: 0)
                     Text("\(Int((pace.fraction * 100).rounded()))%").font(.system(.title3, design: .rounded, weight: .black))
@@ -33,7 +34,7 @@ struct BookCard: View {
 
             ProgressBar(fraction: pace.fraction, color: theme.brand)
             HStack {
-                Text("Page \(pace.current.formatted()) of \(book.totalPages.formatted())")
+                Text(pace.position)
                 Spacer()
                 Text(pace.line).multilineTextAlignment(.trailing)
             }
@@ -41,7 +42,7 @@ struct BookCard: View {
             Sparkline(points: Stats.progressLine(book.snap, sessions: sessions), total: book.totalPages, color: theme.brandText)
 
             HStack(spacing: 8) {
-                Button("Log pages") { guarded { router.logBookID = book.uid; router.tab = .today } }
+                Button(book.isAudio ? "Log listening" : "Log pages") { guarded { router.logBookID = book.uid; router.tab = .today } }
                     .buttonStyle(PillButton(kind: .solid))
                 Button("Finished it") { guarded { Library.markFinished(ctx, book); router.rateBookID = book.uid } }
                     .buttonStyle(PillButton(kind: .highlight))
@@ -75,7 +76,8 @@ struct BookCard: View {
             Button("Write it off", role: .destructive) { Library.markDNF(ctx, book, note: dnfNote); dnfNote = "" }
             Button("Keep reading", role: .cancel) {}
         } message: {
-            Text("It stops on page \(book.currentPage) and moves to the shelf. Your pages still count.")
+            Text(book.isAudio ? "It stops where you are and moves to the shelf. Your listening still counts."
+                              : "It stops on page \(book.currentPage) and moves to the shelf. Your pages still count.")
         }
         .confirmationDialog("Delete \(book.title)?", isPresented: $askDelete, titleVisibility: .visible) {
             Button("Delete book and its \(book.sessions?.count ?? 0) sessions", role: .destructive) { Library.delete(ctx, book) }

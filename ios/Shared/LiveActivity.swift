@@ -10,6 +10,12 @@ struct ReadingActivityAttributes: ActivityAttributes {
         var clockStart: Date
         var elapsed: TimeInterval
         var startPage: Int
+        var isAudio: Bool? = nil
+
+        /// "From page 138" or "From 1h 05m".
+        var fromText: String {
+            isAudio == true ? "From \(Stats.formatMinutes(Double(startPage)))" : "From page \(startPage)"
+        }
     }
     var bookID: String
     var bookTitle: String
@@ -17,7 +23,7 @@ struct ReadingActivityAttributes: ActivityAttributes {
 
 extension ReadingActivityAttributes.ContentState {
     init(_ t: ActiveTimer) {
-        self.init(isRunning: t.status == .running, clockStart: t.clockStart, elapsed: t.elapsed(), startPage: t.startPage)
+        self.init(isRunning: t.status == .running, clockStart: t.clockStart, elapsed: t.elapsed(), startPage: t.startPage, isAudio: t.isAudio)
     }
 }
 

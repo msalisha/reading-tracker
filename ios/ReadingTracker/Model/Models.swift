@@ -16,6 +16,8 @@ final class Book {
     /// The page you were on when you added the book.
     var startPage: Int = 0
     var statusRaw: String = BookStatus.reading.rawValue
+    /// "print" or "audio". For an audiobook, `totalPages`, `startPage` and session positions are in minutes.
+    var formatRaw: String = "print"
     var addedAt: Date = Date.now
     var lastAt: Date = Date.now
     var finishedDay: String?
@@ -30,7 +32,8 @@ final class Book {
 
     init(uid: String = UUID().uuidString, title: String, author: String = "", isbn: String? = nil,
          totalPages: Int, startPage: Int = 0, status: BookStatus = .reading,
-         addedAt: Date = .now, lastAt: Date = .now, coverData: Data? = nil) {
+         addedAt: Date = .now, lastAt: Date = .now, coverData: Data? = nil, isAudio: Bool = false) {
+        self.formatRaw = isAudio ? "audio" : "print"
         self.uid = uid
         self.copyID = UUID().uuidString
         self.title = title
@@ -49,9 +52,14 @@ final class Book {
         set { statusRaw = newValue.rawValue }
     }
 
+    var isAudio: Bool {
+        get { formatRaw == "audio" }
+        set { formatRaw = newValue ? "audio" : "print" }
+    }
+
     var snap: BookSnap {
         BookSnap(id: uid, title: title, author: author, totalPages: totalPages, startPage: startPage, status: status,
-                 finishedDay: finishedDay, dnfDay: dnfDay, rating: rating, addedAt: addedAt, lastAt: lastAt)
+                 finishedDay: finishedDay, dnfDay: dnfDay, rating: rating, addedAt: addedAt, lastAt: lastAt, isAudio: isAudio)
     }
 
     var currentPage: Int { Stats.currentPage(snap, sessions: (sessions ?? []).map(\.snap)) }
@@ -86,7 +94,7 @@ final class ReadingSession {
 
     var snap: SessionSnap {
         SessionSnap(id: uid, bookID: book?.uid ?? "", day: day, startedAt: startedAt, startPage: startPage,
-                    endPage: endPage, pages: pages, minutes: minutes)
+                    endPage: endPage, pages: pages, minutes: minutes, isAudio: book?.isAudio ?? false)
     }
 }
 

@@ -112,7 +112,7 @@ enum RecapSlide: Hashable {
     static func slides(for r: Recap) -> [RecapSlide] {
         var s: [RecapSlide] = [.intro]
         if !r.finished.isEmpty { s.append(.books) }
-        if r.pages > 0 { s.append(.time); s.append(.habits) }
+        if r.pages > 0 || r.listened > 0 { s.append(.time); s.append(.habits) }
         if r.topBook != nil || r.longestBook != nil { s.append(.favourite) }
         if r.quote != nil { s.append(.quote) }
         s.append(.summary)
@@ -284,7 +284,11 @@ struct RecapSlideView: View {
             if recap.minutes > 0 {
                 sticker("Time with a book", "\(recap.hours >= 10 ? "\(Int(recap.hours.rounded()))" : String(format: "%.1f", recap.hours)) hours", tilt: -4)
             }
-            sticker("Reading sessions", "\(recap.sessions)", tilt: 3).padding(.leading, 28)
+            if recap.listened > 0 {
+                sticker("Audiobooks", "\(Stats.formatMinutes(Double(recap.listened))) listened", tilt: 3).padding(.leading, 28)
+            } else {
+                sticker("Reading sessions", "\(recap.sessions)", tilt: 3).padding(.leading, 28)
+            }
             Spacer(minLength: 0)
             Spacer(minLength: 0)
         case .habits:
@@ -359,7 +363,7 @@ struct RecapSlideView: View {
     /// One finished book, shown large: cover, title, author, rating, and how long it took.
     private func singleBook(_ b: BookSnap) -> some View {
         let days = recap.fastest.flatMap { $0.book.id == b.id ? $0.days : nil }
-        let facts = ["\(b.totalPages.formatted()) pages", days.map { "read in \($0) \($0 == 1 ? "day" : "days")" }]
+        let facts = [b.lengthText, days.map { "read in \($0) \($0 == 1 ? "day" : "days")" }]
             .compactMap { $0 }.joined(separator: " · ")
         return VStack(alignment: .leading, spacing: 16) {
             cover(b, width: 132)

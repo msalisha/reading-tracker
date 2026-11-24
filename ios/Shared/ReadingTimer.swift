@@ -12,6 +12,8 @@ struct ActiveTimer: Codable, Equatable {
     var accumulated: TimeInterval = 0
     var runningSince: Date?
     var status: Status
+    /// The book is an audiobook, so `startPage` is a position in minutes.
+    var isAudio: Bool? = nil
 
     func elapsed(at now: Date = .now) -> TimeInterval {
         accumulated + (runningSince.map { max(0, now.timeIntervalSince($0)) } ?? 0)

@@ -24,6 +24,8 @@ struct TimerCard: View {
     private var timedBook: Book? { timer.flatMap { t in readingBooks.first { $0.uid == t.bookID } ?? Library.book(ctx, uid: t.bookID) } }
     private var pickedBook: Book? { readingBooks.first { $0.uid == pickedID } ?? readingBooks.first }
     private var ink: Color { theme.onBrand }
+    /// The book being timed (or about to be) is an audiobook.
+    private var isAudio: Bool { (timer != nil ? timedBook : pickedBook)?.isAudio ?? false }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -31,7 +33,7 @@ struct TimerCard: View {
                 if timer?.status == .running {
                     Circle().fill(theme.highlight).frame(width: 9, height: 9).overlay(Circle().stroke(ink, lineWidth: 1.5))
                 }
-                Eyebrow("Reading timer", color: ink)
+                Eyebrow(isAudio ? "Listening timer" : "Reading timer", color: ink)
             }
 
             if let t = timer {
@@ -69,15 +71,16 @@ struct TimerCard: View {
             FocusSoundBar()
 
             if showFromField {
-                PageField(label: timer == nil ? "Starting on page" : "Started on page", text: $fromText,
-                          placeholder: "0", identifier: "timerFrom", focused: $fromFocused)
+                PageField(label: isAudio ? (timer == nil ? "Starting at" : "Started at") : (timer == nil ? "Starting on page" : "Started on page"),
+                          text: $fromText, placeholder: "0", identifier: "timerFrom", focused: $fromFocused, isAudio: isAudio)
             }
             if let t = timer, t.status != .running, timedBook != nil {
-                PageField(label: "Finished on page", text: $toText,
-                          placeholder: placeholderTo, identifier: "timerTo", focused: $toFocused)
+                PageField(label: isAudio ? "Got to" : "Finished on page", text: $toText,
+                          placeholder: placeholderTo, identifier: "timerTo", focused: $toFocused, isAudio: isAudio)
             }
             if let t = timer, t.status == .running {
-                Text("From page \(t.startPage)").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
+                Text(isAudio ? "From \(Stats.formatMinutes(Double(t.startPage)))" : "From page \(t.startPage)")
+                    .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
             }
 
             if let error {
@@ -127,20 +130,23 @@ struct TimerCard: View {
     }
 
     private var placeholderTo: String {
-        guard let b = timedBook, let t = timer else { return "" }
+        guard let b = timedBook, let t = timer, !b.isAudio else { return "" }
         return "\(min(t.startPage + 1, b.totalPages))–\(b.totalPages)"
     }
 
     private var note: String {
         guard let t = timer else {
-            return readingBooks.isEmpty ? "Add a book first, then time your reading."
+            if readingBooks.isEmpty { return "Add a book first, then time your reading." }
+            return isAudio ? "Change the start if you're not picking up where you left off. The timer keeps counting even if you close the app."
                 : "Change the starting page if you're not picking up where you left off. The timer keeps counting even if you close the app."
         }
         if timedBook == nil { return "The book for this timer was deleted." }
         switch t.status {
         case .running: return "Started \(t.startedAt.formatted(date: .omitted, time: .shortened)). It's on your lock screen too."
-        case .paused: return "Paused. Type the page you got to and tap Log it, or resume."
-        case .stopped: return "Check the starting page, type the page you got to, and tap Log it."
+        case .paused: return isAudio ? "Paused. Check where you got to and tap Log it, or resume."
+                                     : "Paused. Type the page you got to and tap Log it, or resume."
+        case .stopped: return isAudio ? "We've filled in where you got to from the time listened. Change it if you listen faster, then tap Log it."
+                                      : "Check the starting page, type the page you got to, and tap Log it."
         }
     }
 
@@ -150,9 +156,9 @@ struct TimerCard: View {
                 Button("Discard") { discard() }.buttonStyle(PillButton(kind: .outline, big: true))
             } else if t.status == .running {
                 HStack(spacing: 8) {
-                    Button("Pause") { timerModel.pause() }
+                    Button("Pause") { timerModel.pause(); fillListened() }
                         .buttonStyle(PillButton(kind: .solid, big: true)).accessibilityIdentifier("timerPause")
-                    Button("Done") { timerModel.stop(); toFocused = true }
+                    Button("Done") { timerModel.stop(); fillListened(); if !isAudio { toFocused = true } }
                         .buttonStyle(PillButton(kind: .highlight, big: true)).accessibilityIdentifier("timerDone")
                 }
             } else {
@@ -174,6 +180,12 @@ struct TimerCard: View {
         }
     }
 
+    /// For an audiobook, where you got to is where you started plus the time listened (you can change it).
+    private func fillListened() {
+        guard isAudio, toText.isEmpty, let t = timerModel.timer, let b = timedBook else { return }
+        toText = "\(min(b.totalPages, t.startPage + t.minutes()))"
+    }
+
     private func fillFrom() {
         if pickedID.isEmpty || !readingBooks.contains(where: { $0.uid == pickedID }) { pickedID = readingBooks.first?.uid ?? "" }
         if let t = timer {
@@ -188,7 +200,11 @@ struct TimerCard: View {
         guard let b = pickedBook else { return }
         let from = Int(trimming: fromText)
         guard let from, from >= 0, from < b.totalPages else {
-            error = from == nil ? "Type the page you are starting on." : "This book has \(b.totalPages) pages, so you need to start before page \(b.totalPages)."
+            if b.isAudio {
+                error = from == nil ? "Enter where you're starting from." : "This audiobook is \(Stats.formatMinutes(Double(b.totalPages))) long, so you need to start before the end."
+            } else {
+                error = from == nil ? "Type the page you are starting on." : "This book has \(b.totalPages) pages, so you need to start before page \(b.totalPages)."
+            }
             fromFocused = true
             return
         }
@@ -202,7 +218,7 @@ struct TimerCard: View {
         guard store.access.canEdit else { router.showPaywall = true; return }
         guard let t = timer, let b = timedBook else { return }
         let from = Int(trimming: fromText), to = Int(trimming: toText)
-        if let problem = Library.problem(from: from, to: to, totalPages: b.totalPages) {
+        if let problem = Library.problem(from: from, to: to, totalPages: b.totalPages, isAudio: b.isAudio) {
             error = problem
             if from == nil || (from ?? 0) >= b.totalPages { fromFocused = true } else { toFocused = true }
             return

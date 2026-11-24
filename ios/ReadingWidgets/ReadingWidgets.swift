@@ -63,7 +63,6 @@ struct StreakView: View {
 
     var body: some View {
         let streak = entry.snapshot.streak(now: entry.date)
-        let today = entry.snapshot.pagesToday(now: entry.date)
         switch family {
         case .accessoryCircular:
             VStack(spacing: 0) {
@@ -75,7 +74,7 @@ struct StreakView: View {
         case .accessoryRectangular:
             VStack(alignment: .leading) {
                 Text("\(streak)-day streak").font(.headline)
-                Text("\(today) pages today").font(.caption)
+                Text(entry.snapshot.todayText(now: entry.date)).font(.caption)
             }
             .containerBackground(for: .widget) { Color.clear }
         default:
@@ -85,7 +84,7 @@ struct StreakView: View {
                     .minimumScaleFactor(0.5)
                 Text(streak == 1 ? "day" : "days in a row").font(.caption).foregroundStyle(entry.theme.boardMuted)
                 Spacer(minLength: 4)
-                Text("\(today) pages today").font(.footnote.weight(.bold)).foregroundStyle(entry.theme.boardText)
+                Text(entry.snapshot.todayText(now: entry.date)).font(.footnote.weight(.bold)).foregroundStyle(entry.theme.boardText)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .containerBackground(for: .widget) { entry.theme.board }
@@ -121,7 +120,7 @@ struct CurrentBookView: View {
                         if !b.author.isEmpty { Text(b.author).font(.caption).foregroundStyle(theme.boardMuted).lineLimit(1) }
                         let frac = Double(b.page) / Double(max(1, b.totalPages))
                         ProgressView(value: frac).tint(theme.brand)
-                        Text("Page \(b.page) of \(b.totalPages) · \(Int((frac * 100).rounded()))%")
+                        Text("\(b.positionText) · \(Int((frac * 100).rounded()))%")
                             .font(.caption).foregroundStyle(theme.boardMuted)
                         Spacer(minLength: 0)
                         if let t = entry.timer, t.bookID == b.id {
@@ -239,7 +238,7 @@ struct LockScreenTimer: View {
                 Text(context.state.isRunning ? "READING NOW" : "PAUSED")
                     .font(.caption2.weight(.bold)).foregroundStyle(theme.boardMuted)
                 Text(context.attributes.bookTitle).font(.headline).foregroundStyle(.white).lineLimit(1)
-                Text("From page \(context.state.startPage)").font(.caption).foregroundStyle(theme.boardMuted)
+                Text(context.state.fromText).font(.caption).foregroundStyle(theme.boardMuted)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 8) {

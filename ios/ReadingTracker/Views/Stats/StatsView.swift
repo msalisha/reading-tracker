@@ -9,6 +9,8 @@ struct StatsView: View {
     @AppStorage("statsRange") private var rangeRaw = ChartRange.day.rawValue
     @AppStorage("statsDays") private var avgDays = 30
     @State private var recapPeriod: Recap.Period?
+    /// The chart shows listening time instead of pages.
+    @AppStorage("statsAudio") private var audioChart = false
 
     var body: some View {
         let bs = books.map(\.snap), ss = sessions.map(\.snap), now = Date()
@@ -75,14 +77,24 @@ struct StatsView: View {
     }
 
     private func pagesBoard(_ ss: [SessionSnap], _ now: Date) -> some View {
-        let bars = Stats.pageBars(range, sessions: ss, now: now)
-        return board("Pages read", Stats.pageBarsSummary(range, bars: bars)) {
+        let hasAudio = ss.contains(where: \.isAudio)
+        let audio = audioChart && hasAudio
+        let bars = Stats.pageBars(range, sessions: ss, now: now, audio: audio)
+        return board(audio ? "Time listened" : "Pages read", Stats.pageBarsSummary(range, bars: bars, audio: audio)) {
+            if hasAudio {
+                Picker("Show", selection: $audioChart) {
+                    Label("Pages", systemImage: "book").tag(false)
+                    Label("Listening", systemImage: "headphones").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("statsAudio")
+            }
             Picker("Group by", selection: $rangeRaw) {
                 ForEach(ChartRange.allCases) { Text($0.title).tag($0.rawValue) }
             }
             .pickerStyle(.segmented)
             Chart(bars) { b in
-                BarMark(x: .value("When", b.label), y: .value("Pages", b.value))
+                BarMark(x: .value("When", b.label), y: .value(audio ? "Minutes" : "Pages", b.value))
                     .foregroundStyle(b.isCurrent ? theme.highlight : theme.brand)
                     .cornerRadius(4)
                     .accessibilityLabel(b.detail)

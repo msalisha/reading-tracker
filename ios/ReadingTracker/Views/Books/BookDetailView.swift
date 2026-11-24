@@ -83,11 +83,11 @@ struct BookDetailView: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(s.startedAt.formatted(date: .abbreviated, time: .shortened)).font(.subheadline)
-                                    Text("p. \(s.startPage) → \(s.endPage)" + (s.minutes.map { " · \($0) min" } ?? ""))
+                                    Text(s.snap.rangeText + (s.minutes.map { " · \($0) min" } ?? ""))
                                         .font(.footnote).foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Text("+\(s.pages)").font(.system(.headline, design: .rounded, weight: .black)).foregroundStyle(theme.brandText)
+                                Text(s.snap.gainText).font(.system(.headline, design: .rounded, weight: .black)).foregroundStyle(theme.brandText)
                             }
                             .padding(.vertical, 10)
                             Divider()
@@ -137,17 +137,17 @@ struct BookDetailView: View {
         switch book.status {
         case .finished:
             let took = Stats.daysTaken(book.snap, sessions: (book.sessions ?? []).map(\.snap))
-            return "All \(book.totalPages.formatted()) pages read" + (took.map { " · took \($0) \($0 == 1 ? "day" : "days")" } ?? "")
+            return (book.isAudio ? "All \(book.snap.lengthText) listened" : "All \(book.totalPages.formatted()) pages read") + (took.map { " · took \($0) \($0 == 1 ? "day" : "days")" } ?? "")
         case .dnf:
-            return "Stopped on page \(pace.current) of \(book.totalPages)"
+            return book.isAudio ? "Stopped at \(pace.position)" : "Stopped on page \(pace.current) of \(book.totalPages)"
         default:
-            return "Page \(pace.current) of \(book.totalPages) · \(pace.line)"
+            return "\(pace.position) · \(pace.line)"
         }
     }
 
     private var statusLine: String {
         switch book.status {
-        case .wantToRead: return "Want to read · \(book.totalPages) pages"
+        case .wantToRead: return "Want to read · \(book.snap.lengthText)"
         case .reading: return "On the go"
         case .finished: return "Finished" + (book.finishedDay.map { " \(Day.short($0))" } ?? "")
         case .dnf: return "Written off" + (book.dnfDay.map { " \(Day.short($0))" } ?? "")
@@ -260,7 +260,7 @@ struct NoteEditor: View {
                 if let n = draft.note {
                     text = n.text
                     pageText = n.page.map(String.init) ?? ""
-                } else if book.status == .reading {
+                } else if book.status == .reading, !book.isAudio {
                     pageText = "\(book.currentPage)"
                 }
             }
@@ -297,8 +297,13 @@ struct EditBookSheet: View {
             Form {
                 TextField("Book name", text: $title)
                 TextField("Author", text: $author)
-                LabeledContent("Number of pages") { TextField("", text: $pagesText).keyboardType(.numberPad).multilineTextAlignment(.trailing) }
-                LabeledContent("Started on page") { TextField("", text: $startText).keyboardType(.numberPad).multilineTextAlignment(.trailing) }
+                if book.isAudio {
+                    LabeledContent("Length") { DurationInput(minutesText: $pagesText, identifier: "editLength") }
+                    LabeledContent("Started at") { DurationInput(minutesText: $startText, identifier: "editStart") }
+                } else {
+                    LabeledContent("Number of pages") { TextField("", text: $pagesText).keyboardType(.numberPad).multilineTextAlignment(.trailing) }
+                    LabeledContent("Started on page") { TextField("", text: $startText).keyboardType(.numberPad).multilineTextAlignment(.trailing) }
+                }
                 if let error { Text(error).foregroundStyle(.red) }
             }
             .navigationTitle("Edit book")
@@ -319,9 +324,15 @@ struct EditBookSheet: View {
     private func save() {
         let name = title.trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty else { error = "Add the book name."; return }
-        guard let pages = Int(trimming: pagesText), pages > 0 else { error = "Number of pages should be 1 or more."; return }
+        guard let pages = Int(trimming: pagesText), pages > 0 else {
+            error = book.isAudio ? "Add how long the audiobook is." : "Number of pages should be 1 or more."
+            return
+        }
         let start = Int(trimming: startText) ?? 0
-        guard start >= 0, start < pages else { error = "The starting page should be between 0 and \(pages - 1)."; return }
+        guard start >= 0, start < pages else {
+            error = book.isAudio ? "Where you started should be before the end." : "The starting page should be between 0 and \(pages - 1)."
+            return
+        }
         book.title = name
         book.author = author.trimmingCharacters(in: .whitespaces)
         book.totalPages = pages
