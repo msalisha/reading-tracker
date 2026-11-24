@@ -123,12 +123,13 @@ struct CardBackdrop: View {
         ctx.fill(corner, with: .color(Color.black.opacity(0.35)))
     }
 
-    /// A large, faint open book with lines of "text" on each page.
+    /// A faint open book resting near the bottom, clear of the text, with lines of "text" on each page.
     private func drawOpenBook(_ ctx: inout GraphicsContext, _ s: CGSize) {
         let w = s.width, h = s.height
-        let cx = w / 2
-        let top = h * 0.5, bottom = h * 0.9
-        let pw = w * 0.44
+        let cx = w * 0.5
+        let bottom = h * 0.9
+        let pw = min(w * 0.3, h * 0.22)
+        let top = bottom - pw * 0.95
         for side: CGFloat in [-1, 1] {
             var page = Path()
             page.move(to: CGPoint(x: cx, y: top + 10))
@@ -136,8 +137,8 @@ struct CardBackdrop: View {
             page.addLine(to: CGPoint(x: cx + side * pw, y: bottom - 8))
             page.addQuadCurve(to: CGPoint(x: cx, y: bottom), control: CGPoint(x: cx + side * pw * 0.5, y: bottom - 22))
             page.closeSubpath()
-            ctx.fill(page, with: .color(theme.boardText.opacity(0.05)))
-            ctx.stroke(page, with: .color(theme.brand.opacity(0.45)), lineWidth: 2)
+            ctx.fill(page, with: .color(theme.boardText.opacity(0.04)))
+            ctx.stroke(page, with: .color(theme.brand.opacity(0.32)), lineWidth: 1.5)
             // text lines
             var y = top + 22
             while y < bottom - 26 {
@@ -145,23 +146,23 @@ struct CardBackdrop: View {
                 let inset = pw * 0.14
                 line.move(to: CGPoint(x: cx + side * inset, y: y + 6))
                 line.addLine(to: CGPoint(x: cx + side * (pw - inset), y: y))
-                ctx.stroke(line, with: .color(theme.boardMuted.opacity(0.18)), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                y += 13
+                ctx.stroke(line, with: .color(theme.boardMuted.opacity(0.12)), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                y += 11
             }
         }
         // spine and a ribbon bookmark
         var spine = Path()
         spine.move(to: CGPoint(x: cx, y: top + 10))
         spine.addLine(to: CGPoint(x: cx, y: bottom))
-        ctx.stroke(spine, with: .color(theme.brand.opacity(0.6)), lineWidth: 2)
+        ctx.stroke(spine, with: .color(theme.brand.opacity(0.45)), lineWidth: 1.5)
         var ribbon = Path()
-        ribbon.move(to: CGPoint(x: cx + 8, y: top + 8))
-        ribbon.addLine(to: CGPoint(x: cx + 8, y: bottom + 26))
-        ribbon.addLine(to: CGPoint(x: cx + 13, y: bottom + 20))
-        ribbon.addLine(to: CGPoint(x: cx + 18, y: bottom + 26))
-        ribbon.addLine(to: CGPoint(x: cx + 18, y: top + 6))
+        ribbon.move(to: CGPoint(x: cx + 6, y: top + 8))
+        ribbon.addLine(to: CGPoint(x: cx + 6, y: bottom + 18))
+        ribbon.addLine(to: CGPoint(x: cx + 10, y: bottom + 13))
+        ribbon.addLine(to: CGPoint(x: cx + 14, y: bottom + 18))
+        ribbon.addLine(to: CGPoint(x: cx + 14, y: top + 6))
         ribbon.closeSubpath()
-        ctx.fill(ribbon, with: .color(theme.highlight.opacity(0.7)))
+        ctx.fill(ribbon, with: .color(theme.highlight.opacity(0.5)))
     }
 
     /// Celebration confetti: little dots, strips and stars around the edges, keeping the middle calm.

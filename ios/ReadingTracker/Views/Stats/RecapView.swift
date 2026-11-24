@@ -217,17 +217,16 @@ struct RecapSlideView: View {
             }
             if let wd = recap.favouriteWeekday { line("Favourite reading day", wd + "s") }
         case .favourite:
-            Spacer(minLength: 0)
-            if let top = recap.topBook {
-                Text("Top rated").font(.headline).foregroundStyle(theme.boardMuted)
-                bookFeature(top, caption: stars(top.rating))
-            }
-            if let long = recap.longestBook, long.id != recap.topBook?.id || recap.topBook == nil {
-                Text("Longest read").font(.headline).foregroundStyle(theme.boardMuted).padding(.top, 6)
-                bookFeature(long, caption: "\(long.totalPages.formatted()) pages")
-            }
-            if let fast = recap.fastest {
-                line("Fastest finish", "\(fast.book.title) in \(fast.days) \(fast.days == 1 ? "day" : "days")")
+            if recap.finished.count == 1, let b = recap.finished.first {
+                Text(recap.period.isYear ? "Book of the year" : "Book of the month")
+                    .font(.system(size: 30, weight: .black, design: .rounded))
+                    .padding(.top, 8)
+                singleBook(b)
+            } else {
+                Text("Highlights").font(.system(size: 30, weight: .black, design: .rounded)).padding(.top, 8)
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach(highlightRows, id: \.book.id) { row in highlight(row) }
+                }
             }
         case .quote:
             if let q = recap.quote {
@@ -271,13 +270,56 @@ struct RecapSlideView: View {
         }
     }
 
-    private func bookFeature(_ b: BookSnap, caption: String?) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            cover(b, width: 72)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(b.title).font(.title3.weight(.heavy)).lineLimit(3)
-                if !b.author.isEmpty { Text(b.author).font(.subheadline).foregroundStyle(theme.boardMuted) }
-                if let caption { Text(caption).font(.headline).foregroundStyle(theme.highlight) }
+    /// One finished book, shown large: cover, title, author, rating, and how long it took.
+    private func singleBook(_ b: BookSnap) -> some View {
+        let days = recap.fastest.flatMap { $0.book.id == b.id ? $0.days : nil }
+        let facts = ["\(b.totalPages.formatted()) pages", days.map { "read in \($0) \($0 == 1 ? "day" : "days")" }]
+            .compactMap { $0 }.joined(separator: " · ")
+        return VStack(alignment: .leading, spacing: 16) {
+            cover(b, width: 132)
+                .shadow(color: .black.opacity(0.35), radius: 10, y: 6)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(b.title).font(.system(size: 26, weight: .heavy)).lineLimit(3).minimumScaleFactor(0.7)
+                if !b.author.isEmpty { Text(b.author).font(.title3).foregroundStyle(theme.boardMuted) }
+                if let s = stars(b.rating) { Text(s).font(.title2).foregroundStyle(theme.highlight) }
+                Text(facts).font(.headline).foregroundStyle(theme.highlight)
+            }
+        }
+    }
+
+    private struct HighlightRow {
+        var book: BookSnap
+        var labels: [String]
+        var details: [String]
+    }
+
+    /// Top rated, longest and fastest, with each book shown once (its facts combined if it wins twice).
+    private var highlightRows: [HighlightRow] {
+        var rows: [HighlightRow] = []
+        func add(_ label: String, _ book: BookSnap?, _ detail: String?) {
+            guard let book else { return }
+            if let i = rows.firstIndex(where: { $0.book.id == book.id }) {
+                rows[i].labels.append(label.lowercased())
+                if let detail { rows[i].details.append(detail) }
+            } else {
+                rows.append(HighlightRow(book: book, labels: [label], details: detail.map { [$0] } ?? []))
+            }
+        }
+        add("Top rated", recap.topBook, stars(recap.topBook?.rating))
+        add("Longest read", recap.longestBook, recap.longestBook.map { "\($0.totalPages.formatted()) pages" })
+        add("Fastest finish", recap.fastest?.book, recap.fastest.map { "in \($0.days) \($0.days == 1 ? "day" : "days")" })
+        return rows
+    }
+
+    private func highlight(_ row: HighlightRow) -> some View {
+        HStack(alignment: .center, spacing: 14) {
+            cover(row.book, width: 58)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(row.labels.joined(separator: " & ").uppercased()).font(.caption.weight(.heavy)).foregroundStyle(theme.boardMuted)
+                Text(row.book.title).font(.headline.weight(.heavy)).lineLimit(2)
+                if !row.details.isEmpty {
+                    Text(row.details.joined(separator: " · ")).font(.subheadline.weight(.semibold)).foregroundStyle(theme.highlight)
+                }
             }
         }
     }
