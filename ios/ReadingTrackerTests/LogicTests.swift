@@ -453,7 +453,7 @@ import AVFoundation
         let (a, _) = twoCopies(ctx)
         a.copyID = ""
         try ctx.save()
-        #expect(Sync.dedupe(ctx) == 0)
+        Sync.dedupe(ctx)   // the session copies both have IDs, so they merge; the books must wait
         #expect(try ctx.fetch(FetchDescriptor<Book>()).count == 2)
         #expect(Sync.assignCopyIDs(ctx) == 1)
         #expect(!a.copyID.isEmpty)
