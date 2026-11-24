@@ -1,17 +1,16 @@
-# Focus sound recordings
+# Focus sounds
 
-Each file is a seamless stereo loop, loudness-matched to the others, with a copy of its first 8192 samples after the
-loop point (the app plays exactly the number of frames listed in `loops.json`, and uses that copy to keep the join clean).
+Every Focus sound in Pageturner is original to the app: rendered by the scripts in `ios/tools/sounds`.
+No third-party recordings are included, so no credits or licences are needed.
 
-| File | Source | Licence |
+| File | Made by | What's in it |
 |---|---|---|
-| `rain.m4a` | Field recording [Rain (1).ogg](https://commons.wikimedia.org/wiki/File:Rain_(1).ogg) by ezwa, Wikimedia Commons | Public domain |
-| `fireplace.m4a` | Field recording [Dry grass burning in open fireplace.ogg](https://commons.wikimedia.org/wiki/File:Dry_grass_burning_in_open_fireplace.ogg) by ezwa, Wikimedia Commons, with a soft low roar added | Public domain |
-| `cafe.m4a` | Rendered for Pageturner by `tools/sounds/render_cafe.py` (14 synthetic voices in a simulated room, crockery, espresso machine) | Original, owned by the app |
-| `beach.m4a` | Rendered for Pageturner by `tools/sounds/render_beach.py` (spectrally shaped waves, foam bubbles, surf, breeze) | Original, owned by the app |
+| `rain.m4a` | `render_rain.py`, tone-matched with `match_eq.py` | distant wash, rain drumming on roofs, a dense patter of drops, puddle "plinks", a gutter drip |
+| `fireplace.m4a` | `render_fire.py` | the roar and hiss of the flames, bursts of crackles, a log shifting, sap whistling, a small room |
+| `cafe.m4a` | `render_cafe.py` | seven tables of murmured conversation, cups, spoons, cutlery, a chair, an espresso machine, the room |
+| `beach.m4a` | `render_beach.py` | waves that swell, crash and fizz back as foam, distant surf, a light breeze |
 
 White noise is generated live by the app.
 
-To swap in a real recording later, replace the file and regenerate its loop with
-`tools/sounds/make_loop.py SOURCE OUT.m4a --seconds 90`, then update its frame count in `loops.json`
-(`seconds × 44100`).
+Each file is a seamless stereo loop with a copy of its first 8192 samples after the loop point; the app plays exactly
+the number of frames in `loops.json` and uses that copy to keep the join clean.

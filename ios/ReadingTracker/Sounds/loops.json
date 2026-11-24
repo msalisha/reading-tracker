@@ -1,8 +1,8 @@
 {
   "sampleRate": 44100,
   "loopFrames": {
-    "rain": 1764000,
-    "fireplace": 2646000,
+    "rain": 2646000,
+    "fireplace": 3087000,
     "cafe": 3969000,
     "beach": 4410000
   }
