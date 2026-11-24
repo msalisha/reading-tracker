@@ -18,8 +18,9 @@ final class FlowUITests: XCTestCase {
         a.lifetime = .keepAlways
         add(a)
         if let dir = ProcessInfo.processInfo.environment["SCREENSHOT_DIR"] {
-            try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
-            try? s.pngRepresentation.write(to: URL(fileURLWithPath: dir).appendingPathComponent("\(name).png"))
+            let url = URL(fileURLWithPath: dir).appendingPathComponent("\(name).png")   // names may include a folder
+            try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? s.pngRepresentation.write(to: url)
         }
     }
 
@@ -129,6 +130,46 @@ final class FlowUITests: XCTestCase {
         shot(app, "03b-stats-more")
         tab(app, "Log")
         shot(app, "05-log")
+    }
+
+    /// The App Store set: six screens in story order, saved to AppStore/ (CI uploads them as "app-store-screenshots").
+    func testAppStoreScreenshots() {
+        var app = launch(["-uitest-sample"])
+        // 1. The timer running, with a Focus sound on
+        XCTAssertTrue(app.buttons["sound-rain"].waitForExistence(timeout: 5))
+        app.buttons["sound-rain"].tap()
+        app.buttons["timerStart"].tap()
+        XCTAssertTrue(app.buttons["timerPause"].waitForExistence(timeout: 5))
+        sleep(3)
+        shot(app, "AppStore/1-timer")
+        // 2. The library
+        tab(app, "Books")
+        shot(app, "AppStore/2-books")
+        // 3. A book page with rating, progress and notes
+        element(app, "Pride and Prejudice").tap()
+        XCTAssertTrue(app.buttons["addThought"].waitForExistence(timeout: 5))
+        shot(app, "AppStore/3-book")
+        // 4. A quote shared as a picture
+        let share = app.buttons["shareCard"].firstMatch
+        XCTAssertTrue(share.waitForExistence(timeout: 5))
+        share.tap()
+        XCTAssertTrue(app.buttons["cardShare"].waitForExistence(timeout: 5))
+        if app.buttons["Story"].exists { app.buttons["Story"].tap() }
+        if app.buttons["bg-Bookshelf"].exists { app.buttons["bg-Bookshelf"].tap() }
+        shot(app, "AppStore/4-quote-card")
+        // 5. Stats, from a fresh start
+        app.terminate()
+        app = launch(["-uitest-sample"])
+        tab(app, "Stats")
+        sleep(1)
+        shot(app, "AppStore/5-stats")
+        // 6. The monthly recap
+        XCTAssertTrue(app.buttons["recapMonth"].waitForExistence(timeout: 5))
+        app.buttons["recapMonth"].tap()
+        XCTAssertTrue(app.buttons["recapShare"].waitForExistence(timeout: 5))
+        app.descendants(matching: .any)["recapSlides"].swipeLeft()
+        sleep(1)
+        shot(app, "AppStore/6-recap")
     }
 
     func testExpiredTrialIsReadOnly() {

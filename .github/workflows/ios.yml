@@ -48,6 +48,11 @@ jobs:
           print((pro or phones)[-1]["udid"])')
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
           xcrun simctl list devices available | grep "$UDID"
+          # App Store screenshots: boot it and show a tidy status bar (9:41, full battery and signal)
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b || true
+          xcrun simctl status_bar "$UDID" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 \
+            --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100 || true
 
       - name: Build and run tests
         env:
@@ -85,4 +90,12 @@ jobs:
           path: |
             ${{ runner.temp }}/screenshots
             ios/build.log
+          if-no-files-found: ignore
+
+      - name: Upload App Store screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-store-screenshots
+          path: ${{ runner.temp }}/screenshots/AppStore
           if-no-files-found: ignore

@@ -35,7 +35,7 @@ Outside the app:
 
 Re-run `xcodegen` whenever files are added or `project.yml` changes.
 
-**Before the first App Store release (iCloud):** open [CloudKit Console](https://icloud.developer.apple.com) → your container → **Deploy Schema Changes…** to copy the data layout from Development to Production. Run the app once from Xcode first (with an iCloud-signed-in device) so the Development schema exists. App Store builds use Production, and sync won't work there until it's deployed. Repeat after any change to the data models.
+**Before TestFlight or the App Store:** deploy the iCloud schema (see "Putting it on the App Store", step 5).
 
 **If "Start my 3-day free trial" fails while testing from Xcode:**
 - The message now says why. If it mentions **Screen Time**, turn on in-app purchases: iPhone **Settings → Screen Time → Content & Privacy Restrictions → iTunes & App Store Purchases → In-app Purchases → Allow**.
@@ -45,53 +45,64 @@ Re-run `xcodegen` whenever files are added or `project.yml` changes.
 
 **Testing the trial in Xcode:** Debug → StoreKit → Manage Transactions shows the trial and unlock. Delete them to start again. To see the "trial ended" screen without waiting 3 days, run with the launch argument `-access expired` (Product → Scheme → Edit Scheme → Arguments). Other values are `trial`, `unlocked` and `none`. Add `-uitest -uitest-sample` to see a sample library.
 
+## Using it yourself
+
+- **From Xcode** (what you have now): a development build. With a paid account it works for about a year; press ▶︎ again to renew or update. Purchases are free test purchases, and the error box offers **Unlock for testing**.
+- **From TestFlight** (recommended, no cable): upload a build as described below, add yourself under **TestFlight → Internal Testing**, then install from the TestFlight app. TestFlight purchases are free, so tap **Unlock forever**. Each build lasts 90 days.
+- **From the App Store** after launch: install it like anyone else; it replaces the TestFlight copy and keeps your library. Unlock it by buying it, or with a free **offer code** you create for `unlock.lifetime` in App Store Connect.
+
+**iCloud and switching builds:** your library always stays on the phone, but builds run from Xcode sync with iCloud's *Development* area, while TestFlight and App Store copies use *Production*. Deploy the schema (step 5 below) before installing from TestFlight, and save a backup first (Settings → Save a backup) to be safe. The TestFlight copy then uploads your library to Production, and your other devices pick it up from there.
+
 ## Putting it on the App Store
 
-### In App Store Connect (appstoreconnect.apple.com)
-1. **Certificates, Identifiers & Profiles** (developer.apple.com):
-   - Register the App ID (your `APP_BUNDLE_ID`) with **App Groups** turned on.
-   - Create the group `group.<your bundle id>`.
-   - Register `<bundle id>.widgets` with the same group.
-   - Xcode's automatic signing can do all of this for you on first run.
-2. **My Apps → +** New App: platform iOS, name **Pageturner** (if it's taken, try *Pageturner: Reading Tracker* or *Pageturner – Reading Log*; the name under the icon can stay Pageturner), primary language, the bundle ID, and a SKU (anything, e.g. `pageturner-1`).
-3. **In-App Purchases** (Monetization → In-App Purchases), create two **Non-Consumable** items:
+### 1. One-off setup (App Store Connect → appstoreconnect.apple.com)
+1. **Business → Agreements:** accept the **Paid Applications** agreement and add your bank and tax details. In-app purchases (including the free trial) don't work, even for Apple's reviewers, until this is active. Consider the **Small Business Program** (15% commission instead of 30%).
+2. **Bundle ID:** set your own `APP_BUNDLE_ID` in `project.yml` (not `com.example…`) and run the app from Xcode once. Automatic signing registers the App ID, the App Group, the widget extension and the iCloud container `iCloud.<bundle id>`.
+3. **My Apps → +** New App: iOS, name **Pageturner** (if it's taken: *Pageturner: Reading Tracker* or *Pageturner – Reading Log*; the name under the icon stays Pageturner), your bundle ID, any SKU (e.g. `pageturner-1`).
+4. **In-App Purchases** (Monetization → In-App Purchases), two **Non-Consumable** items:
 
    | Product ID | Reference name | Price | Display name | Description |
    |---|---|---|---|---|
    | `trial.3day` | 3-Day Free Trial | **Free** | 3-Day Free Trial | Use every feature free for 3 days. |
-   | `unlock.lifetime` | Unlock forever | **9.99** (choose the matching price point in your currency, e.g. £9.99 / $9.99 / €9.99) | Unlock forever | Unlock everything, forever. One payment, no subscription. |
+   | `unlock.lifetime` | Unlock forever | **9.99** (the matching price point in each currency, e.g. £9.99 / $9.99 / €9.99) | Unlock forever | Unlock everything, forever. One payment, no subscription. |
 
-   Apple requires the free item's name to say how long the trial is ("3-Day Free Trial"). Add a review screenshot to each item; the paywall screenshot works.
-4. **App Privacy:** choose **Data Not Collected**.
-5. **Privacy Policy URL:** `https://msalisha.github.io/reading-tracker/privacy.html`
-   **Support URL:** `https://msalisha.github.io/reading-tracker/support.html`
-6. **Category:** Books (secondary: Lifestyle or Productivity). **Age rating:** 4+.
+   Apple requires the free item's name to say how long the trial is ("3-Day Free Trial"). Each item needs a review screenshot; the paywall screenshot works.
+5. **iCloud schema:** after running the app from Xcode at least once on a device signed in to iCloud, open [CloudKit Console](https://icloud.developer.apple.com) → container `iCloud.<bundle id>` → **Deploy Schema Changes…** (Development → Production). Sync won't work in TestFlight or the App Store until this is done. Repeat after any change to the data models.
+6. **App Privacy:** **Data Not Collected** (iCloud sync uses the customer's own private iCloud, which you can't access).
+   - **Privacy Policy URL:** `https://msalisha.github.io/reading-tracker/privacy.html`
+   - **Support URL:** `https://msalisha.github.io/reading-tracker/support.html`
+   - **Category:** Books (secondary: Lifestyle or Productivity). **Age rating:** 4+.
+   - Export compliance is already answered in the app (`ITSAppUsesNonExemptEncryption = NO`).
 
-### Upload and test
-1. In Xcode: set the destination to **Any iOS Device**, then Product → **Archive** → Distribute App → App Store Connect.
-2. Install from **TestFlight** on your phone. Check the camera scanning, the lock-screen timer and the widgets on a real device.
-3. In the version page: add screenshots, the description, keywords and the in-app purchases, then **Submit for Review**.
+### 2. Upload and test
+1. In Xcode, choose **Any iOS Device (arm64)** as the destination, then **Product → Archive**. In the Organizer: **Distribute App → App Store Connect → Upload**. (For each later upload, raise `CURRENT_PROJECT_VERSION` in `project.yml`, and `MARKETING_VERSION` for a new release.)
+2. After 10–30 minutes the build appears under **TestFlight**. Add yourself to **Internal Testing** and install it from the TestFlight app.
+3. Check on a real device: barcode and quote scanning, the lock-screen timer and Dynamic Island, widgets, Focus sounds with the screen locked, iCloud sync to a second device, starting the trial and buying the unlock (free in TestFlight).
 
-### Screenshots
-CI saves screenshots of the sample library on every run (Actions → the run → **ios-results** artifact). For the App Store sizes, run the `FlowUITests/testScreenshots` test on an **iPhone 16 Pro Max** (6.9") simulator in Xcode, then use the images from the test report.
+### 3. The version page, then submit
+1. **Screenshots:** every CI run uploads a ready-made set as the **app-store-screenshots** artifact (GitHub → Actions → the latest "iOS app" run → Artifacts). They're taken on the largest iPhone (6.9", 1320 × 2868) with a tidy 9:41 status bar, which is the size App Store Connect asks for: timer with Focus sounds, library, book page, quote card, stats, monthly recap.
+2. Paste the text below, select the build, and attach **both in-app purchases** to the version (they're reviewed together with the first version).
+3. Paste the review notes, then **Submit for Review**. Review usually takes 1–3 days. If something is rejected, Apple explains why in App Store Connect.
+4. Choose whether to release automatically once approved, or manually.
 
 ### Notes for the App Review team (paste into "Notes")
-> This app is a free download with a 3-day free trial, then a one-off non-consumable purchase ("Unlock forever"). Following guideline 3.1.1, the trial is a free non-consumable in-app purchase named "3-Day Free Trial", started from the welcome screen. After 3 days, all previously entered data stays visible and exportable (read-only); adding or logging shows the unlock screen. "Restore purchases" is in Settings. The camera is used only for barcode and quote scanning on-device. No account or login is needed.
+> This app is a free download with a 3-day free trial, then a one-off non-consumable purchase ("Unlock forever"). Following guideline 3.1.1, the trial is a free non-consumable in-app purchase named "3-Day Free Trial", started from the welcome screen; "Look around first" lets you browse without starting it. After 3 days, all previously entered data stays visible and exportable (read-only); adding or logging shows the unlock screen. "Restore purchases" is in Settings. The camera is used only for barcode and quote scanning, processed on-device. Library data syncs through the user's own private iCloud database (can be switched off in Settings). Cover search opens Google Images in an in-app browser; nothing is sent except the search terms. No account or login is needed.
 
 ### Suggested App Store text
 - **Subtitle (30 chars):** Reading timer, notes & stats
-- **Keywords (100 chars):** reading tracker,book log,reading timer,pages,streak,quotes,bookshelf,reading goals,book journal
-- **Promotional text:** Time your reading on the lock screen, keep your favourite quotes, and watch your streak grow.
+- **Keywords (100 chars):** reading tracker,book log,reading timer,pages,streak,quotes,bookshelf,book journal,focus,recap
+- **Promotional text:** Time your reading on the lock screen with rain or café sounds, keep your favourite quotes, and get a monthly recap of every page.
 - **Description:**
   > Track every page you read.
   >
-  > • Reading timer, right on your lock screen and Dynamic Island, with pause and resume
-  > • Scan a book's barcode to add it, with its cover
+  > • A reading timer right on your lock screen and Dynamic Island, with pause and resume
+  > • Focus sounds while you read: rain, café, fireplace, beach or soft noise
+  > • Scan a book's barcode to add it with its cover, or find any cover with Google Images
   > • Keep quotes and thoughts for every book, and scan a quote straight from the page
-  > • Rate the books you finish
+  > • Share quotes as beautiful pictures for your stories
+  > • Rate the books you finish, and keep a Want to read list
   > • Streaks, pages a day, pace, and how long until you finish
-  > • A shelf of everything you've finished this month
-  > • Want to read list
+  > • A monthly recap and a Year in review you can swipe through and share
   > • Home-screen and lock-screen widgets
   > • Six colour schemes, each with a matching app icon
   > • Syncs across your iPhone and iPad with iCloud. No account, no ads, no tracking.
