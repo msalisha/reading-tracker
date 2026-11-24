@@ -533,6 +533,69 @@ import AVFoundation
 }
 
 @MainActor
+@Suite struct GoodreadsTests {
+    private let csv = #"""
+    Book Id,Title,Author,Author l-f,Additional Authors,ISBN,ISBN13,My Rating,Average Rating,Publisher,Binding,Number of Pages,Year Published,Original Publication Year,Date Read,Date Added,Bookshelves,Bookshelves with positions,Exclusive Shelf,My Review,Spoiler,Private Notes,Read Count,Owned Copies
+    1885,"Pride and Prejudice","Jane Austen","Austen, Jane",,"=""0141439513""","=""9780141439518""",5,4.29,Penguin,Paperback,480,2002,1813,2025/03/14,2025/02/01,,,read,"Loved it.<br/>Elizabeth is ""the best"", truly.",,,1,0
+    2,"Middlemarch, a Study","George Eliot","Eliot, George",,"=""""","=""""",0,3.99,Penguin,Hardcover,,1994,1871,,2026/01/05,to-read,to-read (#1),to-read,,,,0,0
+    3,"Emma","Jane Austen","Austen, Jane",,"=""""","=""""",4,4.0,Audible,Audible Audio,,2010,1815,,2026/10/01,currently-reading,currently-reading (#1),currently-reading,,,,0,0
+    4,"A book
+    over two lines","Some Author","Author, Some",,"=""""","=""""",3,3.5,X,Paperback,120,2001,2001,2024/12/31,2024/12/01,,,read,,,,1,0
+    """#
+
+    @Test func readsAnExport() throws {
+        let items = try GoodreadsImport.parse(Data(csv.utf8))
+        #expect(items.count == 4)
+        let pp = try #require(items.first)
+        #expect(pp.title == "Pride and Prejudice")
+        #expect(pp.isbn == "9780141439518")
+        #expect(pp.pages == 480)
+        #expect(pp.rating == 5)
+        #expect(pp.shelf == .read)
+        #expect(pp.dayRead == "2025-03-14")
+        #expect(pp.review == "Loved it.\nElizabeth is \"the best\", truly.")
+        #expect(items[1].title == "Middlemarch, a Study")       // a comma inside quotes
+        #expect(items[1].shelf == .toRead)
+        #expect(items[1].pages == nil && items[1].rating == nil && items[1].isbn == nil)
+        #expect(items[2].shelf == .reading && items[2].isAudio)
+        #expect(items[3].title.contains("over two lines"))       // a line break inside quotes
+    }
+
+    @Test func rejectsOtherFiles() {
+        #expect(throws: GoodreadsImport.Problem.self) { try GoodreadsImport.parse(Data("name,age\nA,3".utf8)) }
+    }
+
+    @Test func importsWithoutDuplicates() throws {
+        let container = Persistence.makeContainer(inMemory: true)
+        let ctx = container.mainContext
+        ctx.insert(Book(uid: "mine", title: "middlemarch a study", author: "George Eliot", totalPages: 880))
+        try ctx.save()
+        let items = try GoodreadsImport.parse(Data(csv.utf8))
+        let first = GoodreadsImport.apply(items, shelves: Set(GoodreadsImport.Shelf.allCases), into: ctx)
+        #expect(first.added == 3)
+        #expect(first.skipped == 1)                              // Middlemarch was already there
+        let books = try ctx.fetch(FetchDescriptor<Book>())
+        #expect(books.count == 4)
+        let pp = try #require(books.first { $0.uid == "goodreads-1885" })
+        #expect(pp.status == .finished)
+        #expect(pp.finishedDay == "2025-03-14")
+        #expect(pp.rating == 5)
+        #expect((pp.notes ?? []).first?.text.hasPrefix("Loved it.") == true)
+        let emma = try #require(books.first { $0.uid == "goodreads-3" })
+        #expect(emma.isAudio && emma.status == .reading && emma.totalPages == 0)
+        #expect(emma.snap.lengthText == "length not set")
+        // Importing again changes nothing but the count of updates.
+        let again = GoodreadsImport.apply(items, shelves: Set(GoodreadsImport.Shelf.allCases), into: ctx)
+        #expect(again.added == 0 && again.updated == 3 && again.skipped == 1)
+        #expect(try ctx.fetch(FetchDescriptor<Book>()).count == 4)
+        #expect(try ctx.fetch(FetchDescriptor<BookNote>()).count == 1)
+        // Only the chosen shelves come in.
+        let other = Persistence.makeContainer(inMemory: true)
+        #expect(GoodreadsImport.apply(items, shelves: [.toRead], into: other.mainContext).added == 1)
+    }
+}
+
+@MainActor
 @Suite struct CardTests {
     /// Renders every card style and shape, and saves the pictures next to the screenshots when a folder is given.
     @Test func everyStyleRenders() throws {

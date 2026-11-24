@@ -43,7 +43,7 @@ enum Backup {
         var out = Contents()
         for (id, value) in books {
             guard let b = value as? [String: Any], let title = b["title"] as? String,
-                  let total = int(b["totalPages"]), total > 0 else { continue }
+                  let total = int(b["totalPages"]), total >= 0 else { continue }
             out.books.append(BookRecord(
                 id: id, title: title, author: b["author"] as? String ?? "", isbn: b["isbn"] as? String,
                 totalPages: total, startPage: int(b["startPage"]) ?? 0,

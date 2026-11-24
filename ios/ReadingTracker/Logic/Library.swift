@@ -8,6 +8,10 @@ import UIKit
 enum Library {
     /// Checks a start/finish pair. Returns a message to show, or nil when it's fine.
     static func problem(from: Int?, to: Int?, totalPages: Int, isAudio: Bool = false) -> String? {
+        if totalPages <= 0 {
+            return isAudio ? "Add this audiobook's length first: open it in Books and tap Edit."
+                           : "Add this book's number of pages first: open it in Books and tap Edit."
+        }
         if isAudio {
             let length = Stats.formatMinutes(Double(totalPages))
             guard let from, from >= 0 else { return "Enter where you started listening." }

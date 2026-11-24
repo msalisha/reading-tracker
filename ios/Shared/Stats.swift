@@ -21,7 +21,10 @@ struct BookSnap: Identifiable, Hashable {
     var isAudio: Bool = false
 
     /// "432 pages" or "11h 05m".
-    var lengthText: String { isAudio ? Stats.formatMinutes(Double(totalPages)) : "\(totalPages.formatted()) pages" }
+    var lengthText: String {
+        if totalPages <= 0 { return isAudio ? "length not set" : "pages not set" }   // e.g. imported without a page count
+        return isAudio ? Stats.formatMinutes(Double(totalPages)) : "\(totalPages.formatted()) pages"
+    }
 }
 
 struct SessionSnap: Identifiable, Hashable {
@@ -77,7 +80,8 @@ struct Pace: Equatable {
 
     /// "Page 138 of 432" or "3h 20m of 11h 05m".
     var position: String {
-        isAudio ? "\(Stats.formatMinutes(Double(current))) of \(Stats.formatMinutes(Double(total)))"
+        if total <= 0 { return isAudio ? "Length not set" : "Pages not set" }
+        return isAudio ? "\(Stats.formatMinutes(Double(current))) of \(Stats.formatMinutes(Double(total)))"
                 : "Page \(current.formatted()) of \(total.formatted())"
     }
 }

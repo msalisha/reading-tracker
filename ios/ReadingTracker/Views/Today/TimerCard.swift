@@ -198,6 +198,10 @@ struct TimerCard: View {
     private func start() {
         guard store.access.canEdit else { router.showPaywall = true; return }
         guard let b = pickedBook else { return }
+        if b.totalPages <= 0 {
+            error = Library.problem(from: nil, to: nil, totalPages: 0, isAudio: b.isAudio)
+            return
+        }
         let from = Int(trimming: fromText)
         guard let from, from >= 0, from < b.totalPages else {
             if b.isAudio {

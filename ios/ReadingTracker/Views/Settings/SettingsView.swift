@@ -17,6 +17,8 @@ struct SettingsView: View {
     @State private var exportFile: URL?
     @State private var csvFile: URL?
     @State private var sync: Sync.Status = .checking
+    @State private var showGoodreads = false
+    @State private var enricher = GoodreadsEnricher.shared
     @State private var syncOn = Persistence.syncEnabled
     @Environment(\.scenePhase) private var scenePhase
 
@@ -68,6 +70,18 @@ struct SettingsView: View {
                             .accessibilityIdentifier("importResult")
                     }
                     Button("Import a backup") { message = nil; importing = true }
+                    Button {
+                        if store.access.canEdit { showGoodreads = true } else { router.showPaywall = true }
+                    } label: {
+                        Label("Import from Goodreads", systemImage: "books.vertical")
+                    }
+                    .accessibilityIdentifier("goodreadsImport")
+                    if enricher.isRunning {
+                        HStack {
+                            ProgressView(value: Double(enricher.done), total: Double(max(1, enricher.total)))
+                            Text(enricher.progressText).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+                        }
+                    }
                     if let exportFile {
                         ShareLink(item: exportFile) { Label("Save a backup", systemImage: "square.and.arrow.up") }
                     }
@@ -108,6 +122,7 @@ struct SettingsView: View {
                 }
             }
             .purchaseAlert()
+            .sheet(isPresented: $showGoodreads) { GoodreadsImportSheet().environment(\.theme, theme) }
             .task(id: books.count + sessions.count) { writeExports() }
         }
     }
