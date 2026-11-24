@@ -108,7 +108,7 @@ jobs:
         run: |
           [ -d screenshots ] || exit 0
           rm -rf shots && mkdir shots
-          (cd screenshots && find . -name '*.png' | while read -r f; do
+          (cd screenshots && find . -name '*.png' -o -name '*.jpg' | while read -r f; do
             out="../shots/$(echo "${f#./}" | tr '/' '_' | sed 's/\.png$/.jpg/')"
             sips -Z 900 -s format jpeg -s formatOptions 60 "$f" --out "$out" >/dev/null
           done)
