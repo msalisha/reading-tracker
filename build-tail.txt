@@ -1,0 +1,150 @@
+    t =     7.13s Find the "Books" Button
+    t =     7.20s Waiting 5.0s for "books.vertical" Button to exist
+    t =     8.25s     Checking `Expect predicate `existsNoRetry == 1` for object "books.vertical" Button`
+    t =     8.25s         Checking existence of `"books.vertical" Button`
+    t =     8.71s Tap "books.vertical" Button
+    t =     8.71s     Wait for com.alishasutcliffe.pageturner to idle
+    t =     8.71s     Find the "books.vertical" Button
+    t =     8.78s     Check for interrupting elements affecting "books.vertical" Button
+    t =     8.84s     Synthesize event
+    t =     9.30s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    11.49s Find the Target Application 'com.alishasutcliffe.pageturner'
+    t =    11.76s Added attachment named '02-books'
+    t =    11.77s Waiting 2.0s for "Stats" Button to exist
+    t =    12.80s     Checking `Expect predicate `existsNoRetry == 1` for object "Stats" Button`
+    t =    12.80s         Checking existence of `"Stats" Button`
+    t =    12.85s Find the "Stats" Button
+    t =    12.92s Waiting 5.0s for "chart.bar" Button to exist
+    t =    13.94s     Checking `Expect predicate `existsNoRetry == 1` for object "chart.bar" Button`
+    t =    13.94s         Checking existence of `"chart.bar" Button`
+    t =    13.99s Tap "chart.bar" Button
+    t =    13.99s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    13.99s     Find the "chart.bar" Button
+    t =    14.07s     Check for interrupting elements affecting "chart.bar" Button
+    t =    14.12s     Synthesize event
+    t =    14.48s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    17.08s Find the Target Application 'com.alishasutcliffe.pageturner'
+    t =    17.38s Added attachment named '03-stats'
+    t =    17.39s Swipe up Target Application 'com.alishasutcliffe.pageturner'
+    t =    17.39s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    17.39s     Find the Target Application 'com.alishasutcliffe.pageturner'
+    t =    17.44s     Check for interrupting elements affecting "Pageturner" Application
+    t =    17.50s     Synthesize event
+    t =    17.93s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    20.34s Find the Target Application 'com.alishasutcliffe.pageturner'
+    t =    20.53s Added attachment named '03b-stats-more'
+    t =    20.53s Waiting 2.0s for "Log" Button to exist
+    t =    21.55s     Checking `Expect predicate `existsNoRetry == 1` for object "Log" Button`
+    t =    21.55s         Checking existence of `"Log" Button`
+    t =    21.70s         Capturing element debug description
+    t =    22.53s     Checking `Expect predicate `existsNoRetry == 1` for object "Log" Button`
+    t =    22.53s         Checking existence of `"Log" Button`
+    t =    22.62s         Capturing element debug description
+    t =    22.62s     Checking existence of `"Log" Button`
+    t =    22.68s Collecting debug information to assist test failure triage
+    t =    22.68s     Requesting snapshot of accessibility hierarchy for app with pid 33978
+    t =    22.82s Swipe down Target Application 'com.alishasutcliffe.pageturner'
+    t =    22.82s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    22.82s     Find the Target Application 'com.alishasutcliffe.pageturner'
+    t =    22.87s     Check for interrupting elements affecting "Pageturner" Application
+    t =    22.93s     Synthesize event
+    t =    23.35s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    25.52s Swipe down Target Application 'com.alishasutcliffe.pageturner'
+    t =    25.52s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    26.06s     Find the Target Application 'com.alishasutcliffe.pageturner'
+    t =    26.12s     Check for interrupting elements affecting "Pageturner" Application
+    t =    26.18s     Synthesize event
+    t =    26.63s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    27.64s Waiting 5.0s for "Log" Button to exist
+    t =    28.68s     Checking `Expect predicate `existsNoRetry == 1` for object "Log" Button`
+    t =    28.68s         Checking existence of `"Log" Button`
+    t =    28.77s Tap "Log" Button
+    t =    28.77s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    28.77s     Find the "Log" Button
+    t =    28.84s     Check for interrupting elements affecting "list.bullet" Button
+    t =    28.91s     Synthesize event
+    t =    29.23s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    31.32s Find the Target Application 'com.alishasutcliffe.pageturner'
+    t =    31.58s Added attachment named '05-log'
+    t =    31.58s Tear Down
+Test Case '-[ReadingTrackerUITests.FlowUITests testScreenshots]' passed (32.045 seconds).
+Test Case '-[ReadingTrackerUITests.FlowUITests testSyncSwitchTurnsOffAndOn]' started.
+    t =     0.00s Start Test at 2026-11-25 19:29:38.975
+    t =     0.04s Set Up
+    t =     0.04s Open com.alishasutcliffe.pageturner
+    t =     0.04s     Launch com.alishasutcliffe.pageturner
+    t =     0.04s         Terminate com.alishasutcliffe.pageturner:33978
+    t =     2.05s         Setting up automation session
+    t =     3.41s         Wait for com.alishasutcliffe.pageturner to idle
+    t =     5.63s Waiting 2.0s for "Settings" Button to exist
+    t =     6.67s     Checking `Expect predicate `existsNoRetry == 1` for object "Settings" Button`
+    t =     6.67s         Checking existence of `"Settings" Button`
+    t =     6.81s Find the "Settings" Button
+    t =     6.88s Waiting 5.0s for "Settings" Button to exist
+    t =     7.89s     Checking `Expect predicate `existsNoRetry == 1` for object "Settings" Button`
+    t =     7.89s         Checking existence of `"Settings" Button`
+    t =     7.95s Tap "Settings" Button
+    t =     7.95s     Wait for com.alishasutcliffe.pageturner to idle
+    t =     7.95s     Find the "Settings" Button
+    t =     8.01s     Check for interrupting elements affecting "gearshape" Button
+    t =     8.09s     Synthesize event
+    t =     8.39s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    10.29s Waiting 5.0s for "syncToggle" Switch to exist
+    t =    11.31s     Checking `Expect predicate `existsNoRetry == 1` for object "syncToggle" Switch`
+    t =    11.31s         Checking existence of `"syncToggle" Switch`
+    t =    11.42s Find the "syncToggle" Switch
+    t =    11.47s Tap "syncToggle" Switch[0.92, 0.50]
+    t =    11.47s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    11.48s     Find the "syncToggle" Switch
+    t =    11.53s     Check for interrupting elements affecting "syncToggle" Switch
+    t =    11.57s     Synthesize event
+    t =    11.58s         Find the "syncToggle" Switch
+    t =    11.63s         Find the "syncToggle" Switch
+    t =    11.69s         Find the "syncToggle" Switch
+    t =    12.06s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    13.37s Find the "syncToggle" Switch
+    t =    13.48s Find the Target Application 'com.alishasutcliffe.pageturner'
+    t =    13.72s Added attachment named '06b-settings-sync-off'
+    t =    13.73s Tap "syncToggle" Switch[0.92, 0.50]
+    t =    13.73s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    13.73s     Find the "syncToggle" Switch
+    t =    13.80s     Check for interrupting elements affecting "syncToggle" Switch
+    t =    13.89s     Synthesize event
+    t =    13.90s         Find the "syncToggle" Switch
+    t =    13.96s         Find the "syncToggle" Switch
+    t =    14.02s         Find the "syncToggle" Switch
+    t =    14.36s     Wait for com.alishasutcliffe.pageturner to idle
+    t =    15.69s Find the "syncToggle" Switch
+    t =    15.86s Tear Down
+Test Case '-[ReadingTrackerUITests.FlowUITests testSyncSwitchTurnsOffAndOn]' passed (16.168 seconds).
+Test Case '-[ReadingTrackerUITests.FlowUITests testWelcomeScreen]' started.
+    t =     0.00s Start Test at 2026-11-25 19:29:55.143
+    t =     0.03s Set Up
+    t =     0.03s Open com.alishasutcliffe.pageturner
+    t =     0.03s     Launch com.alishasutcliffe.pageturner
+    t =     0.03s         Terminate com.alishasutcliffe.pageturner:34940
+    t =     2.42s         Setting up automation session
+    t =     3.80s         Wait for com.alishasutcliffe.pageturner to idle
+    t =     6.01s Waiting 5.0s for "startTrial" Button to exist
+    t =     7.06s     Checking `Expect predicate `existsNoRetry == 1` for object "startTrial" Button`
+    t =     7.06s         Checking existence of `"startTrial" Button`
+    t =     7.21s Find the Target Application 'com.alishasutcliffe.pageturner'
+    t =     7.41s Added attachment named '00-welcome'
+    t =     7.41s Tear Down
+Test Case '-[ReadingTrackerUITests.FlowUITests testWelcomeScreen]' passed (7.636 seconds).
+Test Suite 'FlowUITests' passed at 2026-11-25 19:30:02.783.
+	 Executed 12 tests, with 0 failures (0 unexpected) in 410.403 (410.412) seconds
+Test Suite 'ReadingTrackerUITests.xctest' passed at 2026-11-25 19:30:02.784.
+	 Executed 12 tests, with 0 failures (0 unexpected) in 410.403 (410.413) seconds
+Test Suite 'All tests' passed at 2026-11-25 19:30:02.784.
+	 Executed 12 tests, with 0 failures (0 unexpected) in 410.403 (410.414) seconds
+2026-11-25 19:30:32.490 xcodebuild[3641:14780] [MT] IDETestOperationsObserverDebug: 668.672 elapsed -- Testing started completed.
+2026-11-25 19:30:32.491 xcodebuild[3641:14780] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-25 19:30:32.491 xcodebuild[3641:14780] [MT] IDETestOperationsObserverDebug: 668.672 sec, +668.672 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/reading-tracker/reading-tracker/ios/TestResults.xcresult
+
+** TEST SUCCEEDED **
+
+Testing started
