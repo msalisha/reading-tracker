@@ -595,6 +595,24 @@ import AVFoundation
     }
 }
 
+@Suite struct PurchaseMessageTests {
+    @Test func saysWhenTheStoreOffersNothingYet() {
+        let text = StoreErrors.unavailable(found: 0, of: 2, error: nil)
+        #expect(text.contains("isn't offering this purchase yet"))
+        #expect(text.contains("0 of 2"))
+    }
+
+    @Test func saysWhenThereIsNoConnection() {
+        #expect(StoreErrors.unavailable(found: 0, of: 2, error: URLError(.notConnectedToInternet)).contains("Check your connection"))
+        #expect(StoreErrors.unavailable(found: 0, of: 2, error: StoreKitError.networkError(URLError(.timedOut))).contains("Check your connection"))
+    }
+
+    @Test func passesOnOtherErrors() {
+        struct Odd: LocalizedError { var errorDescription: String? { "Something odd." } }
+        #expect(StoreErrors.unavailable(found: 1, of: 2, error: Odd()) == "The App Store couldn't load this purchase: Something odd.")
+    }
+}
+
 @MainActor
 @Suite struct CardTests {
     /// Renders every card style and shape, and saves the pictures next to the screenshots when a folder is given.

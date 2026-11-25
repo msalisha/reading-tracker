@@ -122,6 +122,7 @@ struct StatsView: View {
                     .cornerRadius(6)
                     .accessibilityLabel(b.detail)
             }
+            .chartXScale(range: .plotDimension(startPadding: 6, endPadding: 16))   // room for the last label ("Today")
             .chartXAxis { AxisMarks(values: labelled) { _ in AxisValueLabel().font(.caption2).foregroundStyle(theme.boardMuted) } }
             .chartYAxis { AxisMarks { _ in
                 AxisGridLine().foregroundStyle(theme.boardGrid)

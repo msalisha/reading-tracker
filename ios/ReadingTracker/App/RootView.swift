@@ -53,6 +53,7 @@ struct RootView: View {
         .onChange(of: phase) { _, now in
             guard now == .active else { return }
             store.now = Date()
+            Task { await store.loadProductsIfMissing() }
             timer.reload()
             Library.refreshWidgets(ctx)
         }

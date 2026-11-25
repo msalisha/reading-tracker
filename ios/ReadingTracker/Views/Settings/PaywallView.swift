@@ -121,7 +121,7 @@ struct PaywallHero: View {
             }
             .frame(width: 86, height: 86)
             .rotationEffect(.degrees(12))
-            .offset(x: 118, y: -52)
+            .offset(x: 112, y: -40)
         }
         .frame(height: 200)
         .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))

@@ -99,9 +99,22 @@ final class Store {
         loaded = true
     }
 
+    /// Why the last attempt to load the purchases failed, if it did (nil when the App Store simply returned fewer).
+    @ObservationIgnored private var loadError: Error?
+
     func loadProducts() async {
-        guard let list = try? await Product.products(for: [Self.trialID, Self.unlockID]) else { return }
-        products = Dictionary(uniqueKeysWithValues: list.map { ($0.id, $0) })
+        do {
+            let list = try await Product.products(for: [Self.trialID, Self.unlockID])
+            loadError = nil
+            products = Dictionary(uniqueKeysWithValues: list.map { ($0.id, $0) })
+        } catch {
+            loadError = error
+        }
+    }
+
+    /// Called when the app comes to the front: picks the purchases up as soon as the App Store offers them.
+    func loadProductsIfMissing() async {
+        if products.count < 2 { await loadProducts() }
     }
 
     func startTrial() async { await buy(Self.trialID) }
@@ -130,8 +143,12 @@ final class Store {
 
     private func buy(_ id: String) async {
         if products[id] == nil { await loadProducts() }
+        if products[id] == nil {   // one more try before saying anything
+            try? await Task.sleep(for: .seconds(1))
+            await loadProducts()
+        }
         guard let product = products[id] else {
-            message = "Couldn't reach the App Store. Check your connection and try again."
+            message = StoreErrors.unavailable(found: products.count, of: 2, error: loadError)
             return
         }
         busy = true
@@ -161,6 +178,16 @@ final class Store {
 
 /// Plain-English reasons a purchase failed.
 enum StoreErrors {
+    /// Why a purchase couldn't even be offered: no connection, the App Store not offering it (yet), or something else.
+    static func unavailable(found: Int, of wanted: Int, error: Error?) -> String {
+        guard let error else {
+            return "The App Store isn't offering this purchase yet (it returned \(found) of \(wanted)). If the app has only just been set up, this can take a few hours. Please try again later."
+        }
+        if let e = error as? StoreKitError, case .networkError = e { return "Couldn't reach the App Store. Check your connection and try again." }
+        if (error as? URLError) != nil { return "Couldn't reach the App Store. Check your connection and try again." }
+        return "The App Store couldn't load this purchase: \(error.localizedDescription)"
+    }
+
     static let notAllowed = "In-app purchases are turned off on this iPhone. Turn them on in Settings → Screen Time → Content & Privacy Restrictions → iTunes & App Store Purchases → In-app Purchases, then try again."
     static let network = "There's no connection to the App Store right now. Check your internet connection and try again. You haven't been charged."
     static let unavailable = "This isn't available in your country's App Store yet. You haven't been charged."

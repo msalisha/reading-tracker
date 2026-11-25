@@ -99,6 +99,16 @@ jobs:
             ios/build.log
           if-no-files-found: ignore
 
+      - name: Make the medium-iPhone size of the App Store screenshots
+        if: always()
+        working-directory: ${{ runner.temp }}
+        run: |
+          [ -d screenshots/AppStore ] || exit 0
+          mkdir -p "screenshots/AppStore/medium-1206x2622"
+          for f in screenshots/AppStore/*.png; do
+            sips -z 2622 1206 "$f" --out "screenshots/AppStore/medium-1206x2622/$(basename "$f")" >/dev/null
+          done
+
       - name: Upload App Store screenshots
         if: always()
         uses: actions/upload-artifact@v4
