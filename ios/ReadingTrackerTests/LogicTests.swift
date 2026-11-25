@@ -635,6 +635,18 @@ import AVFoundation
                     try? data.write(to: dir.appendingPathComponent("\(style.rawValue)-\(shape.rawValue).jpg"))
                 }
             }
+            // For the advert: each style in Lavender, portrait, at full size.
+            if let dir {
+                let advert = dir.deletingLastPathComponent().appendingPathComponent("Advert")
+                try? FileManager.default.createDirectory(at: advert, withIntermediateDirectories: true)
+                let card = QuoteCard(text: short, isQuote: true, title: "Pride and Prejudice", author: "Jane Austen", page: 54,
+                                     theme: .lavender, shape: .portrait, style: style)
+                let renderer = ImageRenderer(content: card)
+                renderer.scale = 3
+                if let data = renderer.uiImage?.pngData() {
+                    try? data.write(to: advert.appendingPathComponent("card-\(style.rawValue).png"))
+                }
+            }
         }
     }
 }

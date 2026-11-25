@@ -195,6 +195,36 @@ final class FlowUITests: XCTestCase {
         shot(app, "AppStore/7-welcome")
     }
 
+    /// Screens for the advert, in the Lavender colours, saved to Advert/ at full size.
+    func testAdvertScreens() {
+        let app = launch(["-uitest-sample"])
+        tab(app, "Settings")
+        app.buttons["theme-lavender"].tap()
+        tab(app, "Today")
+        shot(app, "Advert/today")
+        XCTAssertTrue(app.buttons["sound-rain"].waitForExistence(timeout: 5))
+        app.buttons["sound-rain"].tap()
+        app.buttons["timerStart"].tap()
+        XCTAssertTrue(app.buttons["timerPause"].waitForExistence(timeout: 5))
+        sleep(7)
+        app.swipeUp(velocity: .slow)
+        shot(app, "Advert/timer")
+        tab(app, "Books")
+        shot(app, "Advert/books")
+        tab(app, "Stats")
+        sleep(1)
+        shot(app, "Advert/stats")
+        XCTAssertTrue(app.buttons["recapMonth"].waitForExistence(timeout: 5))
+        app.buttons["recapMonth"].tap()
+        XCTAssertTrue(app.buttons["recapShare"].waitForExistence(timeout: 5))
+        shot(app, "Advert/recap-0")
+        let slides = app.descendants(matching: .any)["recapSlides"]
+        for i in 1...6 {
+            slides.swipeLeft()
+            shot(app, "Advert/recap-\(i)")
+        }
+    }
+
     func testExpiredTrialIsReadOnly() {
         let app = launch(["-uitest-sample"], access: "expired")
         XCTAssertTrue(app.buttons["trialEnded"].waitForExistence(timeout: 5))
