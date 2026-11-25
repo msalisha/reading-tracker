@@ -37,6 +37,7 @@ targets:
       base:
         PRODUCT_NAME: ReadingTracker
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        TARGETED_DEVICE_FAMILY: "1"   # iPhone app (set per target: XcodeGen's default is iPhone + iPad)
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -82,6 +83,7 @@ targets:
       base:
         PRODUCT_NAME: ReadingWidgets
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).widgets
+        TARGETED_DEVICE_FAMILY: "1"   # iPhone app (set per target: XcodeGen's default is iPhone + iPad)
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) WIDGET_EXTENSION
         SKIP_INSTALL: YES
     info:
