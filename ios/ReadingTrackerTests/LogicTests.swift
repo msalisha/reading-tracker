@@ -639,7 +639,17 @@ import AVFoundation
             if let dir {
                 let advert = dir.deletingLastPathComponent().appendingPathComponent("Advert")
                 try? FileManager.default.createDirectory(at: advert, withIntermediateDirectories: true)
-                let card = QuoteCard(text: short, isQuote: true, title: "Pride and Prejudice", author: "Jane Austen", page: 54,
+                // a different quote or note on each, so the advert shows variety (all from public-domain classics)
+                let samples: [CardStyle: (text: String, quote: Bool, title: String, author: String, page: Int?)] = [
+                    .collage: ("I am no bird; and no net ensnares me.", true, "Jane Eyre", "Charlotte Brontë", 293),
+                    .poster: ("I am not afraid of storms, for I am learning how to sail my ship.", true, "Little Women", "Louisa May Alcott", 412),
+                    .dreamy: ("Stayed up until 2am for this ending. Worth every minute.", false, "The Great Gatsby", "F. Scott Fitzgerald", nil),
+                    .highlighter: (short, true, "Pride and Prejudice", "Jane Austen", 54),
+                    .editorial: ("Beware; for I am fearless, and therefore powerful.", true, "Frankenstein", "Mary Shelley", 172),
+                    .bookmark: ("Note to self: read the sequel next.", false, "Emma", "Jane Austen", nil),
+                ]
+                let sample = samples[style] ?? (short, true, "Pride and Prejudice", "Jane Austen", 54)
+                let card = QuoteCard(text: sample.text, isQuote: sample.quote, title: sample.title, author: sample.author, page: sample.page,
                                      theme: .lavender, shape: .portrait, style: style)
                 let renderer = ImageRenderer(content: card)
                 renderer.scale = 3
