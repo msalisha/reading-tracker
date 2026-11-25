@@ -8,7 +8,7 @@ options:
   developmentLanguage: en
 settings:
   base:
-    APP_BUNDLE_ID: com.example.pageturner
+    APP_BUNDLE_ID: com.alishasutcliffe.pageturner
     APP_DISPLAY_NAME: Pageturner
     APP_GROUP: group.$(APP_BUNDLE_ID)
     DEVELOPMENT_TEAM: ""

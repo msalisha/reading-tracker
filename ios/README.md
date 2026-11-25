@@ -26,7 +26,7 @@ Outside the app:
 1. Install Xcode (from the Mac App Store) and XcodeGen: `brew install xcodegen`
 2. Get the code: `git clone https://github.com/msalisha/reading-tracker && cd reading-tracker/ios`
 3. Open `project.yml` and set:
-   - `APP_BUNDLE_ID`: your own reverse-domain id, e.g. `com.yourname.pageturner` (it's `com.example.pageturner` until you change it)
+   - `APP_BUNDLE_ID`: already set to `com.alishasutcliffe.pageturner`. Don't change it after release: the App Store listing, purchases and iCloud data are tied to it.
    - `APP_DISPLAY_NAME`: the name under the icon (already `Pageturner`)
    - `DEVELOPMENT_TEAM`: your Team ID (Xcode → Settings → Accounts, or developer.apple.com → Membership)
 4. `xcodegen` creates `ReadingTracker.xcodeproj`. Open it.
@@ -57,7 +57,7 @@ Re-run `xcodegen` whenever files are added or `project.yml` changes.
 
 ### 1. One-off setup (App Store Connect → appstoreconnect.apple.com)
 1. **Business → Agreements:** accept the **Paid Applications** agreement and add your bank and tax details. In-app purchases (including the free trial) don't work, even for Apple's reviewers, until this is active. Consider the **Small Business Program** (15% commission instead of 30%).
-2. **Bundle ID:** set your own `APP_BUNDLE_ID` in `project.yml` (not `com.example…`) and run the app from Xcode once. Automatic signing registers the App ID, the App Group, the widget extension and the iCloud container `iCloud.<bundle id>`.
+2. **Bundle ID:** `APP_BUNDLE_ID` in `project.yml` is `com.alishasutcliffe.pageturner`. Set `DEVELOPMENT_TEAM` to your Team ID and run the app from Xcode once. Automatic signing registers the App ID, the App Group, the widget extension and the iCloud container `iCloud.<bundle id>`.
 3. **My Apps → +** New App: iOS, name **Pageturner** (if it's taken: *Pageturner: Reading Tracker* or *Pageturner – Reading Log*; the name under the icon stays Pageturner), your bundle ID, any SKU (e.g. `pageturner-1`).
 4. **In-App Purchases** (Monetization → In-App Purchases), two **Non-Consumable** items:
 
