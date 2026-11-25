@@ -1,0 +1,167 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Pageturner advert, 9:16. Drawn at 360 x 640 and rendered at 3x (1080 x 1920) by render.js, which calls setTime(seconds). -->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--brand:#8E6CEF;--pop:#FFB3D9;--ink:#111113;--deep:#2A1240;--cream:#FFF4E0;--night:#18132A}
+html,body{width:360px;height:640px;overflow:hidden;background:#000;font-family:Inter,sans-serif}
+.scene{position:absolute;inset:0;overflow:hidden;display:none}
+.dots{position:absolute;inset:0;background-image:radial-gradient(#11111320 1.4px,transparent 1.6px);background-size:16px 16px}
+.cap{position:absolute;left:24px;right:24px;top:96px;font-weight:900;font-size:43px;line-height:.98;letter-spacing:-.045em;text-transform:uppercase;transform-origin:left top}
+.cap em{font-style:normal;padding:0 7px;border-radius:8px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.sticker{position:absolute;background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius:13px;padding:8px 14px;font-weight:900;font-size:16px;box-shadow:5px 5px 0 var(--ink);white-space:nowrap}
+.phone{position:absolute;left:50%;width:214px;height:465px;margin-left:-107px;border-radius:34px;background:#000;padding:7px;box-shadow:0 24px 50px rgba(0,0,0,.35)}
+.phone .scr{position:relative;width:100%;height:100%;border-radius:28px;overflow:hidden;background:#fff}
+.phone img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+.burst{position:absolute;clip-path:polygon(50% 0,61% 32%,95% 20%,72% 48%,100% 68%,65% 68%,60% 100%,45% 74%,18% 96%,28% 62%,0 50%,31% 38%,20% 6%,44% 26%)}
+.spark{position:absolute;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%)}
+.circle{position:absolute;border-radius:50%}
+.cover{position:absolute;width:132px;height:198px;border-radius:7px;border:5px solid #fff;background:linear-gradient(#111113,#2C2C33);box-shadow:0 12px 24px rgba(0,0,0,.35);color:#fff;font-family:"Liberation Serif",serif;font-weight:700;font-size:19px;padding:15px 12px;line-height:1.1}
+.cover:before{content:"";display:block;width:30px;height:4px;background:var(--pop);margin-bottom:8px}
+.card{position:absolute;left:50%;top:238px;width:252px;height:315px;margin-left:-126px;border-radius:10px;overflow:hidden;box-shadow:0 20px 44px rgba(0,0,0,.5);border:5px solid #fff;background:#fff}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.icon{position:absolute;border-radius:23%;box-shadow:0 14px 30px rgba(0,0,0,.3)}
+</style></head><body>
+
+<div class="scene" id="s1" style="background:var(--brand)">
+  <div class="circle" id="s1c" style="width:330px;height:330px;left:-150px;bottom:-110px;background:var(--pop)"></div>
+  <div id="s1sq" style="position:absolute;width:190px;height:190px;right:-80px;top:-110px;border-radius:44px;background:var(--deep);transform:rotate(18deg)"></div>
+  <div class="cap" id="s1cap" style="color:#fff"></div>
+  <div class="cover" id="cv1" style="left:30px;top:336px">Jane Eyre</div>
+  <div class="cover" id="cv3" style="left:198px;top:336px">Emma</div>
+  <div class="cover" id="cv2" style="left:114px;top:316px">Pride and Prejudice</div>
+  <div class="spark" id="s1sp" style="width:34px;height:34px;left:296px;top:268px;background:#fff"></div>
+</div>
+
+<div class="scene" id="s2" style="background:var(--cream)"><div class="dots"></div>
+  <div class="burst" id="s2b" style="width:110px;height:110px;right:-18px;top:176px;background:var(--pop)"></div>
+  <div class="cap" id="s2cap" style="color:var(--ink)">Time every <em style="background:var(--brand);color:#fff">session.</em></div>
+  <div class="phone" id="s2ph"><div class="scr"><img src="assets/timer.png"></div></div>
+  <div class="sticker" id="s2st" style="left:26px;top:196px">rain optional</div>
+</div>
+
+<div class="scene" id="s3" style="background:var(--pop)">
+  <div class="circle" style="width:300px;height:300px;right:-130px;bottom:-90px;background:var(--brand)"></div>
+  <div class="cap" id="s3cap" style="color:var(--deep)">Books <em style="background:var(--deep);color:var(--pop)">&amp;</em> audiobooks.</div>
+  <div class="phone" id="s3ph"><div class="scr"><img src="assets/books.png"></div></div>
+  <div class="sticker" id="s3st" style="left:26px;top:196px">one shelf</div>
+</div>
+
+<div class="scene" id="s4" style="background:var(--night)">
+  <div class="circle" style="width:260px;height:260px;left:-120px;top:-90px;background:var(--brand)"></div>
+  <div class="spark" id="s4sp" style="width:32px;height:32px;right:34px;top:206px;background:var(--pop)"></div>
+  <div class="cap" id="s4cap" style="color:#fff">Turn quotes into <em style="background:var(--pop);color:var(--deep)">this.</em></div>
+  <div class="card" id="k1"><img src="assets/card-Collage.png"></div>
+  <div class="card" id="k2"><img src="assets/card-Poster.png"></div>
+  <div class="card" id="k3"><img src="assets/card-Dreamy.png"></div>
+</div>
+
+<div class="scene" id="s5" style="background:var(--brand)">
+  <div id="s5sq" style="position:absolute;width:200px;height:200px;left:-90px;bottom:-70px;border-radius:44px;background:var(--deep);transform:rotate(-14deg)"></div>
+  <div class="cap" id="s5cap" style="color:#fff">Your month in books. <em style="background:var(--pop);color:var(--deep)">Wrapped.</em></div>
+  <div class="phone" id="s5ph"><div class="scr">
+    <img id="r0" src="assets/recap-0.png"><img id="r1" src="assets/recap-1.png"><img id="r2" src="assets/recap-2.png"><img id="r3" src="assets/recap-6.png">
+  </div></div>
+</div>
+
+<div class="scene" id="s6" style="background:var(--cream)"><div class="dots"></div>
+  <div class="circle" style="width:280px;height:280px;left:-130px;bottom:-100px;background:var(--pop)"></div>
+  <div class="cap" id="s6cap" style="color:var(--ink)">Keep your <em style="background:var(--brand);color:#fff">streak.</em></div>
+  <div class="phone" id="s6ph"><div class="scr"><img src="assets/today.png"></div></div>
+  <div class="sticker" id="s6a" style="left:22px;top:196px">bring your Goodreads</div>
+  <div class="sticker" id="s6b" style="right:20px;top:318px;background:var(--brand);color:#fff">iCloud sync</div>
+  <div class="sticker" id="s6c" style="left:18px;top:420px;background:var(--pop)">widgets</div>
+</div>
+
+<div class="scene" id="s7" style="background:var(--brand)">
+  <div class="circle" id="s7c" style="width:380px;height:380px;left:-170px;bottom:-150px;background:var(--pop)"></div>
+  <div style="position:absolute;width:190px;height:190px;right:-80px;top:-110px;border-radius:44px;background:var(--deep);transform:rotate(18deg)"></div>
+  <img class="icon" id="s7i" src="assets/icon.png" style="width:132px;height:132px;left:114px;top:118px">
+  <div id="s7n" style="position:absolute;left:0;right:0;top:264px;text-align:center;color:#fff;font-weight:900;font-size:50px;letter-spacing:-.04em">Pageturner</div>
+  <div id="s7t" style="position:absolute;left:20px;right:20px;top:334px;text-align:center;color:#fff;font-weight:900;font-size:34px;line-height:1.08;letter-spacing:-.03em;text-transform:uppercase">Try it free<br>for 3 days.</div>
+  <div class="sticker" id="s7s" style="left:50%;top:420px;font-size:15px">One payment. No subscription.</div>
+  <div id="s7a" style="position:absolute;left:50%;top:472px;background:var(--ink);color:#fff;font-weight:800;font-size:15px;padding:11px 22px;border-radius:99px;white-space:nowrap">On the App Store</div>
+</div>
+
+<script>
+const HOOKS = {
+  a: 'Your reading life, but make it <em style="background:var(--pop);color:var(--deep)">pretty.</em>',
+  b: 'POV: you finally <em style="background:var(--pop);color:var(--deep)">track</em> your reading.'
+};
+document.getElementById('s1cap').innerHTML = HOOKS[new URLSearchParams(location.search).get('hook') || 'a'];
+
+// start time of each scene, and the end
+const T = [0, 3.6, 7.6, 11.6, 16.8, 20.8, 24.4, 28.4];
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const out = x => 1 - Math.pow(1 - clamp(x), 3);                       // ease out
+const back = x => { x = clamp(x); const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };  // overshoot
+const pop = (el, t, at, dur = 0.45) => { const p = (t - at) / dur; el.style.opacity = clamp(p * 3); return back(p); };
+
+function caption(el, t) { const s = pop(el, t, 0.1, 0.5); el.style.transform = `translateY(${(1 - out(t / 0.5)) * 26}px) scale(${0.86 + 0.14 * s})`; }
+function phone(el, t, tilt, top = 250) {
+  const p = out((t - 0.25) / 0.7);
+  el.style.top = top + 'px';
+  el.style.transform = `translateY(${(1 - p) * 520}px) rotate(${tilt * (1.6 - 0.6 * p) + Math.sin(t * 1.3) * 0.5}deg)`;
+}
+function sticker(el, t, at, tilt, center) {
+  const s = pop(el, t, at);
+  el.style.transform = `${center ? 'translateX(-50%) ' : ''}rotate(${tilt}deg) scale(${Math.max(0, s)})`;
+}
+
+window.DURATION = T[T.length - 1];
+window.setTime = function (time) {
+  const i = Math.max(0, T.findIndex((s, k) => time >= s && time < T[k + 1]));
+  const t = time - T[i], len = T[i + 1] - T[i];
+  document.querySelectorAll('.scene').forEach((s, k) => s.style.display = k === i ? 'block' : 'none');
+  // a quick wipe between scenes: each one slides up into place
+  const scene = document.querySelectorAll('.scene')[i];
+  scene.style.transform = i === 0 ? '' : `translateY(${(1 - out(t / 0.28)) * 640}px)`;
+
+  if (i === 0) {
+    caption($('s1cap'), t);
+    const p = out((t - 0.5) / 0.8);
+    $('cv1').style.transform = `translateY(${(1 - p) * 400}px) translateX(${-26 * p}px) rotate(${-11 * p}deg)`;
+    $('cv3').style.transform = `translateY(${(1 - p) * 400}px) translateX(${26 * p}px) rotate(${11 * p}deg)`;
+    $('cv2').style.transform = `translateY(${(1 - out((t - 0.4) / 0.7)) * 400}px) scale(${1 + 0.03 * Math.sin(t * 2)})`;
+    $('s1sp').style.transform = `scale(${Math.max(0, pop($('s1sp'), t, 1.2))}) rotate(${t * 40}deg)`;
+  }
+  if (i === 1) { caption($('s2cap'), t); phone($('s2ph'), t, -4); sticker($('s2st'), t, 1.2, -5); $('s2b').style.transform = `rotate(${t * 14}deg)`; }
+  if (i === 2) { caption($('s3cap'), t); phone($('s3ph'), t, 4); sticker($('s3st'), t, 1.2, 4); }
+  if (i === 3) {
+    caption($('s4cap'), t);
+    $('s4sp').style.transform = `rotate(${t * 40}deg)`;
+    // three cards, each taking its turn on top
+    const each = (len - 0.5) / 3;
+    ['k1', 'k2', 'k3'].forEach((id, k) => {
+      const el = $(id), local = t - 0.35 - k * each;
+      const p = out(local / 0.45);
+      const tilt = [-5, 4, -3][k];
+      el.style.zIndex = 10 + k;
+      el.style.opacity = local < 0 ? 0 : 1;
+      el.style.transform = `translateY(${(1 - p) * 460}px) rotate(${tilt + (1 - p) * 14}deg) scale(${0.96 + 0.04 * p})`;
+    });
+  }
+  if (i === 4) {
+    caption($('s5cap'), t); phone($('s5ph'), t, -3, 262);
+    const each = (len - 0.6) / 4;
+    ['r0', 'r1', 'r2', 'r3'].forEach((id, k) => {
+      const local = t - 0.6 - k * each;
+      $(id).style.transform = `translateX(${k === 0 ? 0 : (1 - out(local / 0.3)) * 100}%)`;
+      $(id).style.zIndex = k;
+    });
+  }
+  if (i === 5) {
+    caption($('s6cap'), t); phone($('s6ph'), t, 3);
+    sticker($('s6a'), t, 1.0, -4); sticker($('s6b'), t, 1.5, 5); sticker($('s6c'), t, 2.0, -6);
+  }
+  if (i === 6) {
+    $('s7i').style.transform = `scale(${Math.max(0, pop($('s7i'), t, 0.2, 0.55))}) rotate(${(1 - out((t - 0.2) / 0.55)) * -18}deg)`;
+    const n = out((t - 0.55) / 0.4); $('s7n').style.opacity = n; $('s7n').style.transform = `translateY(${(1 - n) * 18}px)`;
+    const s = pop($('s7t'), t, 0.9, 0.5); $('s7t').style.transform = `scale(${0.8 + 0.2 * s})`;
+    sticker($('s7s'), t, 1.4, -3, true);
+    const a = out((t - 1.9) / 0.4); $('s7a').style.opacity = a; $('s7a').style.transform = `translateX(-50%) translateY(${(1 - a) * 16}px)`;
+  }
+};
+setTime(0);
+</script></body></html>
