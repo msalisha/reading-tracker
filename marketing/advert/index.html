@@ -54,6 +54,7 @@ html,body{width:360px;height:640px;overflow:hidden;background:#000;font-family:I
   <div class="card" id="k1"><img src="assets/card-Collage.png"></div>
   <div class="card" id="k2"><img src="assets/card-Poster.png"></div>
   <div class="card" id="k3"><img src="assets/card-Dreamy.png"></div>
+  <div class="card" id="k4"><img src="assets/card-Editorial.png"></div>
 </div>
 
 <div class="scene" id="s5" style="background:var(--brand)">
@@ -90,7 +91,7 @@ const HOOKS = {
 document.getElementById('s1cap').innerHTML = HOOKS[new URLSearchParams(location.search).get('hook') || 'a'];
 
 // start time of each scene, and the end
-const T = [0, 3.6, 7.6, 11.6, 16.8, 20.8, 24.4, 28.4];
+const T = [0, 3.6, 7.6, 11.6, 17.6, 21.6, 25.2, 29.0];
 const $ = id => document.getElementById(id);
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const out = x => 1 - Math.pow(1 - clamp(x), 3);                       // ease out
@@ -131,11 +132,11 @@ window.setTime = function (time) {
     caption($('s4cap'), t);
     $('s4sp').style.transform = `rotate(${t * 40}deg)`;
     // three cards, each taking its turn on top
-    const each = (len - 0.5) / 3;
-    ['k1', 'k2', 'k3'].forEach((id, k) => {
+    const each = (len - 0.5) / 4;
+    ['k1', 'k2', 'k3', 'k4'].forEach((id, k) => {
       const el = $(id), local = t - 0.35 - k * each;
       const p = out(local / 0.45);
-      const tilt = [-5, 4, -3][k];
+      const tilt = [-5, 4, -3, 3][k];
       el.style.zIndex = 10 + k;
       el.style.opacity = local < 0 ? 0 : 1;
       el.style.transform = `translateY(${(1 - p) * 460}px) rotate(${tilt + (1 - p) * 14}deg) scale(${0.96 + 0.04 * p})`;

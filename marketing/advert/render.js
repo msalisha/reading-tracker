@@ -19,7 +19,7 @@ const fs = require('fs'), path = require('path'), os = require('os');
     await page.screenshot({ path: path.join(frames, String(f).padStart(5, '0') + '.png') });
   }
   if (process.env.STILLS) {   // one picture per scene, for checking
-    for (const [i, t] of [1.8, 5.8, 9.8, 12.6, 14.3, 16.2, 18.2, 19.9, 23.4, 27.2].entries()) {
+    for (const [i, t] of [1.8, 5.8, 12.9, 14.3, 15.7, 17.3, 19.0, 24.2, 28.0].entries()) {
       await page.evaluate(t => window.setTime(t), t);
       await page.screenshot({ path: path.join(process.env.STILLS, `still-${i}.png`) });
     }

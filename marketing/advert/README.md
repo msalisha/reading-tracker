@@ -1,6 +1,6 @@
 # Pageturner advert (Instagram, 9:16)
 
-- `pageturner-advert-9x16.mp4`: the advert. 1080 × 1920, 28 seconds, silent (add a track in Instagram).
+- `pageturner-advert-9x16.mp4`: the advert. 1080 × 1920, 29 seconds, silent (add a track in Instagram).
 - `pageturner-advert-9x16-pov.mp4`: the same with a different opening line, for testing which hook works better.
 - `pageturner-advert-cover.png`: the cover frame.
 
